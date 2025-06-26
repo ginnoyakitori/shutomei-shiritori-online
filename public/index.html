@@ -199,6 +199,18 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        /* 新しく追加する「部屋を作成」ボタンのスタイル */
+        #show-create-room-modal-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+
 
         /* ルーム詳細画面 */
         #room-detail {
@@ -287,6 +299,11 @@
             color: #555;
             margin-bottom: 20px;
         }
+        #time-taken-display {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 20px;
+        }
         #return-to-lobby-btn {
             background-color: #607d8b;
             color: white;
@@ -314,10 +331,11 @@
             </tr>
         </thead>
         <tbody>
-            <!-- 部屋の行はJavaScriptで動的に生成されます -->
-        </tbody>
+            </tbody>
     </table>
     
+    <button id="show-create-room-modal-btn">部屋を作成</button>
+
     <div id="create-room-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
         <h3>新しい部屋を作成</h3>
         <input type="text" id="create-room-name" placeholder="部屋名" maxlength="20"><br>
@@ -400,6 +418,9 @@ const socket = io();
 const mainTitle = document.getElementById("main-title");
 const lobbyBox = document.getElementById("lobby-box");
 const roomListTableBody = document.querySelector("#room-list tbody");
+
+// 新しいボタンの取得
+const showCreateRoomModalBtn = document.getElementById("show-create-room-modal-btn");
 
 const createRoomModal = document.getElementById("create-room-modal");
 const createRoomNameInput = document.getElementById("create-room-name");
@@ -497,29 +518,28 @@ function showResult() {
 
 // ===== イベントリスナー =====
 
-// 部屋作成/参加ボタンクリック (動的に生成されるので親要素にイベント委譲)
+// 新しい「部屋を作成」ボタンのクリックイベント
+showCreateRoomModalBtn.addEventListener('click', () => {
+    createRoomModal.style.display = 'block';
+    createRoomNameInput.value = ''; // 入力欄をクリア
+    createRoomPasswordInput.value = ''; // 入力欄をクリア
+    console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。");
+});
+
+
+// 部屋参加ボタンクリック (動的に生成されるので親要素にイベント委譲)
 roomListTableBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-button')) {
         const roomId = e.target.dataset.roomId;
         const roomName = e.target.dataset.roomName; // 部屋名も取得
         console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: ${e.target.classList.contains('create') ? 'Create' : 'Join'}`); // ロギング追加
 
-        if (e.target.classList.contains('create')) {
-            // 作成モーダル表示
-            createRoomModal.style.display = 'block';
-            createRoomNameInput.value = ''; // 入力欄をクリア
-            createRoomPasswordInput.value = ''; // 入力欄をクリア
-            // ニックネームは以前入力したものを保持するか、空にするか選択 (今回はクリアしない)
-            // createNicknameInput.value = ''; 
-            console.log("部屋作成モーダルを開きました。"); // ロギング追加
-        } else if (e.target.classList.contains('join')) {
+        if (e.target.classList.contains('join')) { // 参加ボタンのみを処理
             // 参加モーダル表示
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
             joiningRoomIdInput.value = roomId;
             joinRoomPasswordInput.value = ''; // パスワード入力欄をリセット
-            // ニックネームは以前入力したものを保持するか、空にするか選択 (今回はクリアしない)
-            // joinNicknameInput.value = ''; 
             if (e.target.dataset.hasPassword === "true") { // 文字列でくるので"true"と比較
                 joinRoomPasswordInput.style.display = 'block';
             } else {
@@ -527,12 +547,13 @@ roomListTableBody.addEventListener('click', (e) => {
             }
             console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`); // ロギング追加
         }
+        // 「作成」ボタンの処理は新しい showCreateRoomModalBtn に移管したため、ここでは行わない
     }
 });
 
 // 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
-    console.log("モーダル内の「作成」ボタンがクリックされました。"); // NEW LOG: モーダル内ボタンのクリックを検知
+    console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)"); // NEW LOG: モーダル内ボタンのクリックを検知
     const roomName = createRoomNameInput.value.trim();
     const nickname = createNicknameInput.value.trim();
     const password = createRoomPasswordInput.value;
@@ -636,29 +657,31 @@ socket.on('roomList', (rooms) => {
     console.log("--- roomList イベントを受信しました ---");
     console.log("受信した部屋データ:", rooms);
     roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
+    
+    // 「空き部屋」の行を表示しないため、roomsが空の場合はここで処理を終了
     if (!rooms || rooms.length === 0) {
-        console.log("部屋データが空または無効です。");
+        console.log("部屋データが空または無効です。部屋一覧には何も表示されません。");
         return;
     }
 
     rooms.forEach(room => {
+        // 空き部屋は表示しない
+        if (room.status === 'empty') {
+            return; // この部屋はスキップして次の部屋へ
+        }
+
         const row = roomListTableBody.insertRow();
         let buttonHtml = '';
         let playersText = '';
         let passwordText = '';
-        let roomNameText = room.name || '空き部屋'; // 部屋名がない場合は'空き部屋'
+        let roomNameText = room.name; // 部屋名が存在しないemptyはここで除外されるため、必ず存在する
 
-        if (room.status === 'empty') { // 空き部屋
-            buttonHtml = `<button class="room-button create" data-room-id="" data-room-name="${roomNameText}">作成</button>`;
-            playersText = '-';
-            passwordText = '-';
-        } else { // 既存の部屋
-            const isDisabled = room.status === 'playing' ? 'disabled' : '';
-            buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" data-has-password="${room.hasPassword}" ${isDisabled}>入室</button>`;
-            playersText = `${room.playersCount}/${room.maxPlayers}`;
-            passwordText = room.hasPassword ? 'あり' : 'なし';
-        }
-
+        // 既存の部屋（waiting, playing, finished）のみを処理
+        const isDisabled = room.status === 'playing' ? 'disabled' : '';
+        buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" data-has-password="${room.hasPassword}" ${isDisabled}>入室</button>`;
+        playersText = `${room.playersCount}/${room.maxPlayers}`;
+        passwordText = room.hasPassword ? 'あり' : 'なし';
+        
         row.innerHTML = `
             <td>${roomNameText}</td>
             <td>${playersText}</td>
