@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket クイズゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>WebSocket クイズゲーム</h1>
+
+    <div id="login-section">
+        <input type="text" id="player-name-input" placeholder="あなたの名前" value="名無しさん">
+        <button id="set-name-btn">名前を決定</button>
+        <p id="my-name-display"></p>
+    </div>
+
+    <hr>
+
+    <div id="room-list-section" style="display: none;">
+        <h2>部屋リスト</h2>
+        <button id="create-room-btn">新しい部屋を作成</button>
+        <div id="rooms-container"></div>
+    </div>
+
+    <hr>
+
+    <div id="game-room-section" style="display: none;">
+        <h2>現在の部屋: <span id="current-room-id"></span></h2>
+        <p>ホスト: <span id="host-name"></span></p>
+        <h3>プレイヤー:</h3>
+        <ul id="players-list"></ul>
+        <button id="set-ready-btn">準備完了</button>
+        <button id="leave-room-btn">部屋を出る</button>
+
+        <div id="game-area" style="display: none;">
+            <h3>問題 <span id="question-number"></span> / <span id="total-questions"></span></h3>
+            <p id="question-text"></p>
+            <input type="text" id="answer-input" placeholder="ここに解答を入力">
+            <button id="submit-answer-btn">解答する</button>
+            <p id="answer-result"></p>
+        </div>
+
+        <div id="game-over-area" style="display: none;">
+            <h3>ゲーム終了！</h3>
+            <p id="final-results"></p>
+            <button id="back-to-rooms-btn">部屋リストに戻る</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
