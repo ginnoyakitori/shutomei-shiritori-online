@@ -382,8 +382,8 @@
         <div id="host-controls" style="display: none;">
             <button id="toggle-room-visibility-btn">部屋を一覧に非表示</button> <h4>クイズタイプを選択:</h4>
             <div id="quiz-type-selection">
-                <button class="quiz-type-btn" data-type="kokumei">首都名から国名</button>
-                <button class="quiz-type-btn" data-type="shutomei">国名から首都名</button>
+                <button class="quiz-type-btn" data-type="kokumei">国名クイズ</button>
+                <button class="quiz-type-btn" data-type="shutomei">首都名クイズ</button>
             </div>
             <p id="selected-quiz-type-display"></p>
             <button id="start-game-btn" disabled>ゲームを開始</button>
@@ -501,9 +501,6 @@ let isHost = false;
 let gameStartTime = null; 
 
 // ===== 初期表示 =====
-showLobby();
-
-// ===== 画面表示切り替え関数 =====
 function showLobby() {
     lobbyBox.style.display = "block";
     roomBox.style.display = "none";
@@ -837,7 +834,8 @@ socket.on('roomState', (room) => {
             if (selectedBtn) {
                  selectedBtn.classList.add('selected');
             }
-            selectedQuizTypeDisplay.textContent = `選択中のクイズ: ${room.quizType === 'kokumei' ? '首都名から国名' : '国名から首都名'}`;
+            // 表示テキストを「国名クイズ」または「首都名クイズ」に修正
+            selectedQuizTypeDisplay.textContent = `選択中のクイズ: ${room.quizType === 'kokumei' ? '国名クイズ' : '首都名クイズ'}`;
         } else {
             selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
