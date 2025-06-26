@@ -118,7 +118,7 @@
 
         .flick-btn .top { top: -3px; left: 50%; transform: translateX(-50%); }
         .flick-btn .right { right: -3px; top: 50%; transform: translateY(-50%); }
-        .flick-btn .bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+        .flick-btn .bottom { bottom: -3px; left: 50%; transform: translateY(-50%); }
         .flick-btn .left { left: -3px; top: 50%; transform: translateY(-50%); }
 
         #control-row {
@@ -200,7 +200,7 @@
             cursor: not-allowed;
         }
         /* 新しく追加する「部屋を作成」ボタンのスタイル */
-        #show-create-room-modal-btn, #toggle-room-list-btn, #show-join-by-id-modal-btn {
+        #show-create-room-modal-btn, #show-join-by-id-modal-btn {
             background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
@@ -210,9 +210,6 @@
             font-size: 1.1em;
             margin-top: 20px;
             margin-right: 10px; /* ボタン間のスペース */
-        }
-        #toggle-room-list-btn {
-            background-color: #007bff; /* 異なる色で視認性向上 */
         }
         #show-join-by-id-modal-btn {
             background-color: #6c757d; /* 異なる色で視認性向上 */
@@ -337,7 +334,7 @@
 
 <div id="lobby-box">
     <h2>部屋一覧</h2>
-    <button id="toggle-room-list-btn">部屋一覧を非表示</button> <button id="show-create-room-modal-btn">部屋を作成</button>
+    <button id="show-create-room-modal-btn">部屋を作成</button>
     <button id="show-join-by-id-modal-btn">ルームIDで入室</button> <table id="room-list">
         <thead>
             <tr>
@@ -445,7 +442,6 @@ const roomListTableBody = roomListTable.querySelector("tbody"); // tbody要素�
 
 // 新しいボタンの取得
 const showCreateRoomModalBtn = document.getElementById("show-create-room-modal-btn");
-const toggleRoomListBtn = document.getElementById("toggle-room-list-btn"); 
 const showJoinByIdModalBtn = document.getElementById("show-join-by-id-modal-btn");
 
 const createRoomModal = document.getElementById("create-room-modal");
@@ -503,7 +499,6 @@ let currentRoomId = null;
 let myPlayerId = null;
 let isHost = false;
 let gameStartTime = null; 
-let isRoomListVisible = true; // 部屋リストの表示状態を管理 (クライアント自身の設定)
 
 // ===== 初期表示 =====
 showLobby();
@@ -524,6 +519,7 @@ function showLobby() {
     console.log("ロビー画面を表示しました。");
     // ロビーに戻る際、部屋リストを最新の状態に更新するためにサーバーにリクエスト
     socket.emit('requestRoomList'); // サーバーに最新の部屋リストを要求するイベント
+    roomListTable.style.display = 'table'; // ロビー表示時は部屋リストテーブルを常に表示
 }
 
 function showRoomWaiting() {
@@ -563,17 +559,6 @@ showCreateRoomModalBtn.addEventListener('click', () => {
     console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。");
 });
 
-// 「部屋一覧を表示/非表示」ボタンのクリックイベント (クライアント自身の表示設定)
-toggleRoomListBtn.addEventListener('click', () => {
-    isRoomListVisible = !isRoomListVisible;
-    roomListTable.style.display = isRoomListVisible ? 'table' : 'none';
-    toggleRoomListBtn.textContent = isRoomListVisible ? '部屋一覧を非表示' : '部屋一覧を表示';
-    console.log(`部屋一覧の表示状態を切り替えました (クライアント設定): ${isRoomListVisible ? '表示' : '非表示'}`);
-    // クライアントの表示設定が変更されたので、現在の部屋リストを再描画する
-    socket.emit('requestRoomList'); // サーバーに最新の部屋リストを要求して再描画
-});
-
-
 // 「ルームIDで入室」ボタンのクリックイベント
 showJoinByIdModalBtn.addEventListener('click', () => {
     joinByIdModal.style.display = 'block';
@@ -602,7 +587,7 @@ roomListTableBody.addEventListener('click', (e) => {
 // 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
     console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)");
-    const roomName = createRoomNameNameInput.value.trim(); // ここで `createRoomNameNameInput` とtypoがある可能性があります。
+    const roomName = createRoomNameInput.value.trim(); // ここを修正: createRoomNameNameInput -> createRoomNameInput
     const nickname = createNicknameInput.value.trim();
 
     if (!roomName || !nickname) {
@@ -732,12 +717,6 @@ socket.on('roomList', (rooms) => {
     console.log("受信した部屋データ:", rooms);
     roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
     
-    // クライアント自身の表示設定が「非表示」の場合、ここで終了
-    if (!isRoomListVisible) {
-        console.log("部屋一覧は現在クライアント設定で非表示に設定されています。");
-        return;
-    }
-
     if (!rooms || rooms.length === 0) {
         console.log("部屋データが空または無効です。部屋一覧には何も表示されません。");
         return;
