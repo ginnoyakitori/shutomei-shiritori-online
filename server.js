@@ -53,7 +53,35 @@ const allQuizzes = [
 // --- Socket.IO 接続イベント ---
 io.on('connection', (socket) => {
     console.log(`新しいユーザーが接続しました: ${socket.id}`);
+// 部屋を出るイベント
+    socket.on('leaveRoom', (roomId) => {
+        const room = rooms[roomId];
+        if (room && room.players[socket.id]) {
+            const disconnectedPlayerName = room.players[socket.id].name;
+            delete room.players[socket.id];
+            socket.leave(roomId); // 部屋からソケットを退出させる
+            io.to(roomId).emit('playerLeft', socket.id, disconnectedPlayerName); // 部屋の全員にプレイヤーが退出したことを通知
+            console.log(`${disconnectedPlayerName}(${socket.id}) が部屋 ${roomId} から手動で退出しました。`);
 
+            if (Object.keys(room.players).length === 0) {
+                // 部屋に誰もいなくなった場合
+                delete rooms[roomId];
+                console.log(`部屋 ${roomId} に誰もいなくなったため削除しました。`);
+            } else if (room.hostId === socket.id) {
+                // ホストが切断した場合、新しいホストを割り当てる
+                const newHostId = Object.keys(room.players)[0];
+                if (newHostId) {
+                    room.hostId = newHostId;
+                    room.players[newHostId].isHost = true;
+                    io.to(roomId).emit('newHost', newHostId); // 新しいホストを通知
+                    console.log(`部屋 ${roomId} の新しいホストは ${room.players[newHostId].name} (${newHostId}) です。`);
+                }
+            }
+            // 部屋リストと部屋の状態を更新
+            emitRoomList();
+            emitRoomState(roomId);
+        }
+    });
     socket.on('disconnect', () => {
         console.log(`ユーザーが切断しました: ${socket.id}`);
         // ユーザーが切断したら、参加していた部屋から削除する処理

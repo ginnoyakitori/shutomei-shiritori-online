@@ -24,7 +24,7 @@
             padding: 0px;
         }
 
-        #lobby-box, #quiz-box, #result-box {
+        #lobby-box, #quiz-box, #result-box, #room-box {
             display: none;
             max-width: 500px;
             margin: 20px auto;
@@ -309,9 +309,7 @@
             <tr>
                 <th>部屋名</th>
                 <th>人数</th>
-                <th>ステータス</th>
                 <th>パスワード</th>
-                <th>クイズ</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -464,7 +462,7 @@ function showLobby() {
     createRoomModal.style.display = "none";
     joinRoomModal.style.display = "none";
     currentRoomId = null;
-    myPlayerId = null;
+    myPlayerId = socket.id; // ロビー画面でも自分のソケットIDはわかる
     isHost = false;
 }
 
@@ -503,16 +501,20 @@ roomListTableBody.addEventListener('click', (e) => {
             createRoomModal.style.display = 'block';
             createRoomNameInput.value = '';
             createRoomPasswordInput.value = '';
+            // ニックネームは以前入力したものを保持するか、空にするか選択
+            // createNicknameInput.value = ''; 
         } else if (e.target.classList.contains('join')) {
             // 参加モーダル表示
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${e.target.dataset.roomName}」に参加`;
             joiningRoomIdInput.value = roomId;
             joinRoomPasswordInput.value = ''; // パスワード入力欄をリセット
-            if (!e.target.dataset.hasPassword || e.target.dataset.hasPassword === "false") {
-                joinRoomPasswordInput.style.display = 'none'; // パスワードなしなら非表示
-            } else {
+            // ニックネームは以前入力したものを保持するか、空にするか選択
+            // joinNicknameInput.value = ''; 
+            if (e.target.dataset.hasPassword === "true") { // 文字列でくるので"true"と比較
                 joinRoomPasswordInput.style.display = 'block';
+            } else {
+                joinRoomPasswordInput.style.display = 'none';
             }
         }
     }
@@ -528,7 +530,7 @@ confirmCreateRoomBtn.addEventListener('click', () => {
         return;
     }
     socket.emit('createRoom', { roomName, password, nickname });
-    createRoomModal.style.display = 'none';
+    // モーダルはサーバーからのroomCreatedイベントで閉じる
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => {
@@ -545,7 +547,7 @@ confirmJoinRoomBtn.addEventListener('click', () => {
         return;
     }
     socket.emit('joinRoom', { roomId, password, nickname });
-    joinRoomModal.style.display = 'none';
+    // モーダルはサーバーからのroomJoinedイベントで閉じる
 });
 
 cancelJoinRoomBtn.addEventListener('click', () => {
@@ -556,18 +558,25 @@ cancelJoinRoomBtn.addEventListener('click', () => {
 // 準備完了ボタン
 readyBtn.addEventListener('click', () => {
     if (!currentRoomId) return;
-    const player = document.getElementById(myPlayerId);
-    const isReady = !player.dataset.ready || player.dataset.ready === 'false';
+    // 自分のプレイヤー情報を見つける
+    const myPlayerLi = document.getElementById(myPlayerId);
+    if (!myPlayerLi) return; // 自分の要素が見つからない場合は何もしない
+
+    const isReady = myPlayerLi.dataset.ready === 'false' || !myPlayerLi.dataset.ready; // 現在が未準備ならtrue
     socket.emit('setReady', { roomId: currentRoomId, isReady: isReady });
-    readyBtn.textContent = isReady ? '準備解除' : '準備完了';
-    readyBtn.classList.toggle('unready', isReady);
+    // UI更新はroomStateイベントでサーバーから送られてくる情報に基づいて行う
 });
 
 // 部屋を出るボタン
 leaveRoomBtn.addEventListener('click', () => {
-    socket.disconnect(); // 一度切断
-    socket.connect(); // 再接続
-    showLobby(); // ロビー画面に戻る
+    // サーバーに部屋を出ることを通知（サーバー側でdisconnect処理をさせる）
+    if (currentRoomId) {
+        socket.emit('leaveRoom', currentRoomId); // 新しいイベントを追加
+    }
+    // 接続を切断し、再接続することで新しいソケットIDを取得し、ロビーに戻る
+    socket.disconnect();
+    socket.connect();
+    showLobby();
 });
 
 // クイズタイプ選択ボタン (ホストのみ)
@@ -576,8 +585,7 @@ quizTypeBtns.forEach(button => {
         if (!isHost) return;
         const type = button.dataset.type;
         socket.emit('selectQuizType', { roomId: currentRoomId, type: type });
-        quizTypeBtns.forEach(btn => btn.classList.remove('selected'));
-        button.classList.add('selected');
+        // UI更新はroomStateイベントでサーバーから送られてくる情報に基づいて行う
     });
 });
 
@@ -600,21 +608,19 @@ submitBtn.addEventListener('click', () => {
 returnToLobbyBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return; // ホストのみが操作可能
     socket.emit('returnToLobby', currentRoomId);
-    // リセットはサーバーからのroomStateイベントでUIが更新される
+    // UIはサーバーからのroomStateイベントで更新される
 });
 
 // ===== Socket.IO イベントハンドラ =====
 
 // 部屋リストの更新
 socket.on('roomList', (rooms) => {
-    roomListTableBody.innerHTML = '';
+    roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
     rooms.forEach(room => {
         const row = roomListTableBody.insertRow();
-        if (room.id === null) { // 空き部屋
+        if (room.status === 'empty') { // 空き部屋
             row.innerHTML = `
                 <td>空き部屋</td>
-                <td>0/${room.maxPlayers}</td>
-                <td>-</td>
                 <td>-</td>
                 <td>-</td>
                 <td><button class="room-button create" data-room-id="">ルームを作成</button></td>
@@ -623,9 +629,7 @@ socket.on('roomList', (rooms) => {
             row.innerHTML = `
                 <td>${room.name}</td>
                 <td>${room.playersCount}/${room.maxPlayers}</td>
-                <td>${room.status === 'waiting' ? '待機中' : room.status === 'playing' ? 'ゲーム中' : '終了'}</td>
                 <td>${room.hasPassword ? 'あり' : 'なし'}</td>
-                <td>${room.quizType === 'kokumei' ? '首都名→国名' : room.quizType === 'shutomei' ? '国名→首都名' : '未設定'}</td>
                 <td>
                     <button class="room-button join" data-room-id="${room.id}" data-room-name="${room.name}" data-has-password="${room.hasPassword}" ${room.status === 'playing' ? 'disabled' : ''}>入室</button>
                 </td>
@@ -639,6 +643,7 @@ socket.on('roomCreated', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
     isHost = true;
+    createRoomModal.style.display = 'none'; // モーダルを閉じる
     showRoomWaiting();
 });
 
@@ -646,18 +651,30 @@ socket.on('roomCreated', (roomId) => {
 socket.on('roomJoined', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
+    joinRoomModal.style.display = 'none'; // モーダルを閉じる
     showRoomWaiting();
 });
 
 // 部屋のエラー
 socket.on('roomError', (message) => {
     alert(message);
-    showLobby(); // ロビーに戻る
+    // エラー時はロビーに戻るか、現在の状態を維持するか検討。今回はロビーに戻す。
+    showLobby(); 
 });
 
 // 部屋の状態更新
 socket.on('roomState', (room) => {
-    if (room.id !== currentRoomId) return; // 自分の部屋の情報でなければ無視
+    // 現在の部屋IDが設定されていない、または受信した部屋IDが異なる場合は無視
+    if (!currentRoomId || room.id !== currentRoomId) {
+        // もしロビーにいる状態で部屋の状態が送られてきたら、その部屋に参加している可能性があるので、画面を切り替える
+        if (lobbyBox.style.display === "block" && room.players[socket.id]) {
+            currentRoomId = room.id;
+            myPlayerId = socket.id;
+            showRoomWaiting();
+        } else {
+            return;
+        }
+    }
 
     currentRoomNameEl.textContent = room.name;
     currentRoomIdEl.textContent = room.id;
@@ -685,8 +702,11 @@ socket.on('roomState', (room) => {
         // クイズタイプ選択ボタンの表示更新
         quizTypeBtns.forEach(btn => btn.classList.remove('selected'));
         if (room.quizType) {
-            document.querySelector(`.quiz-type-btn[data-type="${room.quizType}"]`).classList.add('selected');
-            selectedQuizTypeDisplay.textContent = `選択中のクイズ: ${room.quizType === 'kokumei' ? '首都名→国名' : '国名→首都名'}`;
+            const selectedBtn = document.querySelector(`.quiz-type-btn[data-type="${room.quizType}"]`);
+            if (selectedBtn) {
+                 selectedBtn.classList.add('selected');
+            }
+            selectedQuizTypeDisplay.textContent = `選択中のクイズ: ${room.quizType === 'kokumei' ? '首都名から国名' : '国名から首都名'}`;
         } else {
             selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
