@@ -496,7 +496,7 @@ const returnToLobbyBtn = document.getElementById("return-to-lobby-btn");
 
 // ===== グローバル変数 =====
 let currentRoomId = null;
-let myPlayerId = null;
+let myPlayerId = null; // Socket.IO接続時に自動で割り当てられる
 let isHost = false;
 let gameStartTime = null; 
 
@@ -578,6 +578,7 @@ roomListTableBody.addEventListener('click', (e) => {
         if (e.target.classList.contains('join')) {
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
+            joinNicknameInput.value = ''; // ニックネーム入力欄をクリア
             joiningRoomIdInput.value = roomId;
             console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`);
         }
@@ -587,7 +588,7 @@ roomListTableBody.addEventListener('click', (e) => {
 // 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
     console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)");
-    const roomName = createRoomNameInput.value.trim(); // ここを修正: createRoomNameNameInput -> createRoomNameInput
+    const roomName = createRoomNameInput.value.trim();
     const nickname = createNicknameInput.value.trim();
 
     if (!roomName || !nickname) {
@@ -657,11 +658,16 @@ toggleRoomVisibilityBtn.addEventListener('click', () => {
 // 準備完了ボタン
 readyBtn.addEventListener('click', () => {
     if (!currentRoomId) return;
-    const myPlayerLi = document.getElementById(myPlayerId);
-    if (!myPlayerLi) return;
-    const isReady = myPlayerLi.dataset.ready === 'false' || !myPlayerLi.dataset.ready;
-    socket.emit('setReady', { roomId: currentRoomId, isReady: isReady });
-    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${isReady}`);
+    // myPlayerIdはshowLobby()やroomCreated/roomJoinedで設定される
+    // roomStateイベントで最新のroom.playersの状態を取得し、そこからmyPlayerのready状態を判断する
+    // 現在のUIの表示と、サーバーの最新の状態が食い違う可能性があるので、サーバーから送られてきたroomStateを信頼するべき
+    // roomStateイベントでmyPlayerの状態を更新し、readyBtnの表示を適切に設定するようにする
+
+    // roomStateイベントでmyPlayerのready状態を更新し、それに従って準備状態を切り替える
+    // ここでは単純に現在の表示状態を切り替えるのではなく、サーバーに現在の状態を問わず"ready"にしたいか"unready"にしたいかを伝える
+    const currentReadyStatus = readyBtn.classList.contains('unready'); // 'unready'クラスがあれば「準備解除」状態
+    socket.emit('setReady', { roomId: currentRoomId, isReady: !currentReadyStatus });
+    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${!currentReadyStatus}`);
 });
 
 // 部屋を出るボタン
@@ -670,9 +676,16 @@ leaveRoomBtn.addEventListener('click', () => {
         socket.emit('leaveRoom', currentRoomId);
         console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`);
     }
-    socket.disconnect();
-    socket.connect();
-    showLobby();
+    // Socket.IOの再接続はサーバーからの切断イベントで自動的に行われるため、
+    // ここで明示的に disconnect/connect を呼ぶ必要はない。
+    // leaveRoomが成功した場合、roomStateでロビー画面に遷移するはず。
+    // 強制的にロビーに戻す場合は、showLobby()を呼ぶ。
+    // ただし、サーバー側で部屋が削除されたり、新しいホストが選ばれたりするため
+    // クライアント側で部屋の状態を待ってから画面遷移するのが望ましい。
+    // 現在の leaveRoom イベントの後に emitRoomList と emitRoomState が呼ばれるので、
+    // それらのイベントによってUIが更新されるのを待つのが自然。
+    // しかし、即座にロビーに戻したい場合は showLobby() を直接呼んでも良い。
+    showLobby(); // 強制的にロビーに戻る
 });
 
 // クイズタイプ選択ボタン (ホストのみ)
@@ -779,7 +792,8 @@ socket.on('roomState', (room) => {
     console.log("--- roomState イベントを受信しました ---");
     console.log("受信した部屋の状態:", room);
 
-    if (!currentRoomId || (room.id !== currentRoomId && room.players.some(p => p.id === socket.id))) {
+    // 現在の部屋IDが設定されていない場合、または受信した部屋IDが現在の部屋と異なり、かつ自分がその部屋のプレイヤーの場合、部屋待機画面に遷移
+    if (!currentRoomId || (room.id !== currentRoomId && Object.values(room.players).some(p => p.id === socket.id))) {
         currentRoomId = room.id;
         myPlayerId = socket.id;
         showRoomWaiting();
@@ -793,7 +807,8 @@ socket.on('roomState', (room) => {
     currentRoomIdEl.textContent = room.id;
     
     playerListEl.innerHTML = '';
-    room.players.forEach(player => {
+    // room.players はオブジェクトなので Object.values() で配列に変換してループ
+    Object.values(room.players).forEach(player => {
         const li = document.createElement('li');
         li.id = player.id;
         li.dataset.ready = player.ready;
@@ -807,7 +822,8 @@ socket.on('roomState', (room) => {
         playerListEl.appendChild(li);
     });
 
-    const myPlayer = room.players.find(p => p.id === myPlayerId);
+    // myPlayerの特定も Object.values() を使う
+    const myPlayer = Object.values(room.players).find(p => p.id === myPlayerId);
     isHost = myPlayer ? myPlayer.isHost : false;
 
     if (isHost) {
@@ -826,7 +842,7 @@ socket.on('roomState', (room) => {
             selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
 
-        startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && room.players.length >= 1 && room.players.every(p => p.ready));
+        startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && Object.keys(room.players).length >= 1 && Object.values(room.players).every(p => p.ready));
         returnToLobbyBtn.style.display = (room.status === 'finished') ? 'block' : 'none';
     } else {
         hostControls.style.display = 'none';
@@ -843,7 +859,9 @@ socket.on('roomState', (room) => {
         showResult();
         gameOverMessageEl.textContent = `ゲーム終了！`;
         if (room.correctAnswerer && room.correctAnswererTime !== null) {
-            correctAnswererInfoEl.innerHTML = `最も早かったのは **${room.players[room.correctAnswerer].name}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
+            // room.players[room.correctAnswerer] で正解者の名前を取得するために修正
+            const correctAnswererName = room.players[room.correctAnswerer] ? room.players[room.correctAnswerer].name : '不明なプレイヤー';
+            correctAnswererInfoEl.innerHTML = `最も早かったのは **${correctAnswererName}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
             correctAnswererInfoEl.style.color = '#2e7d32';
             correctAnswererInfoEl.style.fontWeight = 'bold';
         } else {
@@ -924,7 +942,6 @@ socket.on('feedback', (message) => {
     feedbackEl.textContent = message;
     console.log(`フィードバック: ${message}`);
 });
-
 
 // ===== フリックキーボード処理 (変更なし) =====
 const flickData = {
