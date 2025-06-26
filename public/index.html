@@ -200,7 +200,7 @@
             cursor: not-allowed;
         }
         /* 新しく追加する「部屋を作成」ボタンのスタイル */
-        #show-create-room-modal-btn {
+        #show-create-room-modal-btn, #toggle-room-list-btn, #show-join-by-id-modal-btn {
             background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
@@ -209,6 +209,13 @@
             cursor: pointer;
             font-size: 1.1em;
             margin-top: 20px;
+            margin-right: 10px; /* ボタン間のスペース */
+        }
+        #toggle-room-list-btn {
+            background-color: #007bff; /* 異なる色で視認性向上 */
+        }
+        #show-join-by-id-modal-btn {
+            background-color: #6c757d; /* 異なる色で視認性向上 */
         }
 
 
@@ -321,12 +328,12 @@
 
 <div id="lobby-box">
     <h2>部屋一覧</h2>
-    <table id="room-list">
+    <button id="toggle-room-list-btn">部屋一覧を非表示</button> <button id="show-create-room-modal-btn">部屋を作成</button>
+    <button id="show-join-by-id-modal-btn">ルームIDで入室</button> <table id="room-list">
         <thead>
             <tr>
                 <th>部屋名</th>
                 <th>人数</th>
-                <th>パスワード</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -334,13 +341,11 @@
             </tbody>
     </table>
     
-    <button id="show-create-room-modal-btn">部屋を作成</button>
-
     <div id="create-room-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
         <h3>新しい部屋を作成</h3>
         <input type="text" id="create-room-name" placeholder="部屋名" maxlength="20"><br>
         <input type="text" id="create-nickname" placeholder="あなたのニックネーム" maxlength="15"><br>
-        <input type="password" id="create-room-password" placeholder="パスワード (任意)"><br>
+        <br>
         <button id="confirm-create-room-btn">作成</button>
         <button id="cancel-create-room-btn">キャンセル</button>
     </div>
@@ -348,10 +353,18 @@
     <div id="join-room-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
         <h3 id="join-room-modal-title"></h3>
         <input type="text" id="join-nickname" placeholder="あなたのニックネーム" maxlength="15"><br>
-        <input type="password" id="join-room-password" placeholder="パスワード (必要な場合)"><br>
+        <br>
         <button id="confirm-join-room-btn">入室</button>
         <button id="cancel-join-room-btn">キャンセル</button>
         <input type="hidden" id="joining-room-id">
+    </div>
+
+    <div id="join-by-id-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
+        <h3>ルームIDで入室</h3>
+        <input type="text" id="join-by-id-room-id" placeholder="4桁のルームID" maxlength="4"><br>
+        <input type="text" id="join-by-id-nickname" placeholder="あなたのニックネーム" maxlength="15"><br>
+        <button id="confirm-join-by-id-btn">入室</button>
+        <button id="cancel-join-by-id-btn">キャンセル</button>
     </div>
 </div>
 
@@ -417,25 +430,34 @@ const socket = io();
 // ===== DOM要素の取得 =====
 const mainTitle = document.getElementById("main-title");
 const lobbyBox = document.getElementById("lobby-box");
-const roomListTableBody = document.querySelector("#room-list tbody");
+const roomListTable = document.getElementById("room-list"); // table要素を取得
+const roomListTableBody = roomListTable.querySelector("tbody"); // tbody要素を取得
 
 // 新しいボタンの取得
 const showCreateRoomModalBtn = document.getElementById("show-create-room-modal-btn");
+const toggleRoomListBtn = document.getElementById("toggle-room-list-btn"); // 追加: 表示/非表示ボタン
+const showJoinByIdModalBtn = document.getElementById("show-join-by-id-modal-btn"); // 追加: ルームIDで入室ボタン
 
 const createRoomModal = document.getElementById("create-room-modal");
 const createRoomNameInput = document.getElementById("create-room-name");
 const createNicknameInput = document.getElementById("create-nickname");
-const createRoomPasswordInput = document.getElementById("create-room-password");
-const confirmCreateRoomBtn = document.getElementById("confirm-create-room-btn");
-const cancelCreateRoomBtn = document.getElementById("cancel-create-room-btn");
+// const createRoomPasswordInput = document.getElementById("create-room-password"); // 削除
 
 const joinRoomModal = document.getElementById("join-room-modal");
 const joinRoomModalTitle = document.getElementById("join-room-modal-title");
 const joinNicknameInput = document.getElementById("join-nickname");
-const joinRoomPasswordInput = document.getElementById("join-room-password");
+// const joinRoomPasswordInput = document.getElementById("join-room-password"); // 削除
 const confirmJoinRoomBtn = document.getElementById("confirm-join-room-btn");
 const cancelJoinRoomBtn = document.getElementById("cancel-join-room-btn");
 const joiningRoomIdInput = document.getElementById("joining-room-id");
+
+// ルームIDで入室用モーダルの要素
+const joinByIdModal = document.getElementById("join-by-id-modal");
+const joinByIdRoomIdInput = document.getElementById("join-by-id-room-id");
+const joinByIdNicknameInput = document.getElementById("join-by-id-nickname");
+const confirmJoinByIdBtn = document.getElementById("confirm-join-by-id-btn");
+const cancelJoinByIdBtn = document.getElementById("cancel-join-by-id-btn");
+
 
 const roomBox = document.getElementById("room-box");
 const currentRoomNameEl = document.getElementById("current-room-name");
@@ -470,6 +492,7 @@ let currentRoomId = null;
 let myPlayerId = null;
 let isHost = false;
 let gameStartTime = null; // ゲームが開始された時刻
+let isRoomListVisible = true; // 部屋リストの表示状態を管理
 
 // ===== 初期表示 =====
 showLobby();
@@ -483,6 +506,7 @@ function showLobby() {
     mainTitle.style.display = "block";
     createRoomModal.style.display = "none";
     joinRoomModal.style.display = "none";
+    joinByIdModal.style.display = "none"; // 追加
     currentRoomId = null;
     myPlayerId = socket.id; // ロビー画面でも自分のソケットIDはわかる
     isHost = false;
@@ -522,8 +546,30 @@ function showResult() {
 showCreateRoomModalBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'block';
     createRoomNameInput.value = ''; // 入力欄をクリア
-    createRoomPasswordInput.value = ''; // 入力欄をクリア
+    createNicknameInput.value = ''; // 入力欄をクリア
     console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。");
+});
+
+// 「部屋一覧を表示/非表示」ボタンのクリックイベント
+toggleRoomListBtn.addEventListener('click', () => {
+    isRoomListVisible = !isRoomListVisible;
+    roomListTable.style.display = isRoomListVisible ? 'table' : 'none';
+    toggleRoomListBtn.textContent = isRoomListVisible ? '部屋一覧を非表示' : '部屋一覧を表示';
+    console.log(`部屋一覧の表示状態を切り替えました: ${isRoomListVisible ? '表示' : '非表示'}`);
+    // 部屋リストの表示状態が変わったので、現在の部屋リストを再描画する
+    // socket.on('roomList') ハンドラ内で isRoomListVisible をチェックして描画を制御するため、
+    // ここで何か特別な処理は不要（roomListイベントが受信されれば自動的に反映される）
+    // もしroomListイベントが頻繁に発生しない場合は、現在の表示データを使ってローカルで再描画する必要があるが、
+    // サーバーからのroomListイベントでUIが更新されるため、このままでOK
+});
+
+
+// 「ルームIDで入室」ボタンのクリックイベント
+showJoinByIdModalBtn.addEventListener('click', () => {
+    joinByIdModal.style.display = 'block';
+    joinByIdRoomIdInput.value = ''; // 入力欄をクリア
+    joinByIdNicknameInput.value = ''; // 入力欄をクリア
+    console.log("「ルームIDで入室」モーダルを開きました。");
 });
 
 
@@ -532,65 +578,82 @@ roomListTableBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-button')) {
         const roomId = e.target.dataset.roomId;
         const roomName = e.target.dataset.roomName; // 部屋名も取得
-        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: ${e.target.classList.contains('create') ? 'Create' : 'Join'}`); // ロギング追加
+        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: Join`); // ロギング追加
 
-        if (e.target.classList.contains('join')) { // 参加ボタンのみを処理
+        if (e.target.classList.contains('join')) {
             // 参加モーダル表示
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
             joiningRoomIdInput.value = roomId;
-            joinRoomPasswordInput.value = ''; // パスワード入力欄をリセット
-            if (e.target.dataset.hasPassword === "true") { // 文字列でくるので"true"と比較
-                joinRoomPasswordInput.style.display = 'block';
-            } else {
-                joinRoomPasswordInput.style.display = 'none';
-            }
+            // パスワード入力欄は削除されたため、ここでの表示/非表示ロジックも不要
             console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`); // ロギング追加
         }
-        // 「作成」ボタンの処理は新しい showCreateRoomModalBtn に移管したため、ここでは行わない
     }
 });
 
 // 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
-    console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)"); // NEW LOG: モーダル内ボタンのクリックを検知
+    console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)");
     const roomName = createRoomNameInput.value.trim();
     const nickname = createNicknameInput.value.trim();
-    const password = createRoomPasswordInput.value;
     if (!roomName || !nickname) {
         alert('部屋名とニックネームは必須です。');
-        console.warn("部屋名またはニックネームが入力されていません。alertが表示されました。"); // ロギング追加
+        console.warn("部屋名またはニックネームが入力されていません。alertが表示されました。");
         return;
     }
-    console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`); // ロギング追加
-    socket.emit('createRoom', { roomName, password, nickname });
+    console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`);
+    // パスワードを削除
+    socket.emit('createRoom', { roomName, nickname });
     // モーダルはサーバーからのroomCreatedイベントで閉じる
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'none';
-    console.log("部屋作成モーダルを閉じました。"); // ロギング追加
+    console.log("部屋作成モーダルを閉じました。");
 });
 
 // 部屋参加モーダル内の「入室」ボタン
 confirmJoinRoomBtn.addEventListener('click', () => {
-    console.log("モーダル内の「入室」ボタンがクリックされました。"); // NEW LOG: モーダル内ボタンのクリックを検知
+    console.log("モーダル内の「入室」ボタンがクリックされました。");
     const roomId = joiningRoomIdInput.value;
     const nickname = joinNicknameInput.value.trim();
-    const password = joinRoomPasswordInput.value;
     if (!nickname) {
         alert('ニックネームは必須です。');
-        console.warn("ニックネームが入力されていません。alertが表示されました。"); // ロギング追加
+        console.warn("ニックネームが入力されていません。alertが表示されました。");
         return;
     }
-    console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`); // ロギング追加
-    socket.emit('joinRoom', { roomId, password, nickname });
+    console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`);
+    // パスワードを削除
+    socket.emit('joinRoom', { roomId, nickname });
     // モーダルはサーバーからのroomJoinedイベントで閉じる
 });
 
 cancelJoinRoomBtn.addEventListener('click', () => {
     joinRoomModal.style.display = 'none';
-    console.log("部屋参加モーダルを閉じました。"); // ロギング追加
+    console.log("部屋参加モーダルを閉じました。");
+});
+
+
+// ルームIDで入室モーダル内の「入室」ボタン
+confirmJoinByIdBtn.addEventListener('click', () => {
+    const roomId = joinByIdRoomIdInput.value.trim();
+    const nickname = joinByIdNicknameInput.value.trim();
+
+    if (!roomId || roomId.length !== 4 || isNaN(roomId)) {
+        alert('有効な4桁のルームIDを入力してください。');
+        return;
+    }
+    if (!nickname) {
+        alert('ニックネームは必須です。');
+        return;
+    }
+    console.log(`ルームIDで入室リクエストをSocket.IOで送信中... ルームID: ${roomId}, ニックネーム: ${nickname}`);
+    socket.emit('joinRoom', { roomId, nickname }); // パスワードは不要
+});
+
+cancelJoinByIdBtn.addEventListener('click', () => {
+    joinByIdModal.style.display = 'none';
+    console.log("ルームIDで入室モーダルを閉じました。");
 });
 
 
@@ -658,6 +721,12 @@ socket.on('roomList', (rooms) => {
     console.log("受信した部屋データ:", rooms);
     roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
     
+    // 部屋リストが非表示設定の場合、何もしない（テーブルは空のまま）
+    if (!isRoomListVisible) {
+        console.log("部屋一覧は現在非表示に設定されています。");
+        return;
+    }
+
     // 「空き部屋」の行を表示しないため、roomsが空の場合はここで処理を終了
     if (!rooms || rooms.length === 0) {
         console.log("部屋データが空または無効です。部屋一覧には何も表示されません。");
@@ -666,26 +735,24 @@ socket.on('roomList', (rooms) => {
 
     rooms.forEach(room => {
         // 空き部屋は表示しない
-        if (room.status === 'empty') {
+        if (room.status === 'empty') { // この条件は通常発生しないが、念のため
             return; // この部屋はスキップして次の部屋へ
         }
 
         const row = roomListTableBody.insertRow();
         let buttonHtml = '';
         let playersText = '';
-        let passwordText = '';
-        let roomNameText = room.name; // 部屋名が存在しないemptyはここで除外されるため、必ず存在する
+        let roomNameText = room.name;
 
         // 既存の部屋（waiting, playing, finished）のみを処理
         const isDisabled = room.status === 'playing' ? 'disabled' : '';
-        buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" data-has-password="${room.hasPassword}" ${isDisabled}>入室</button>`;
+        // パスワード有無の表示を削除
+        buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" ${isDisabled}>入室</button>`;
         playersText = `${room.playersCount}/${room.maxPlayers}`;
-        passwordText = room.hasPassword ? 'あり' : 'なし';
         
         row.innerHTML = `
             <td>${roomNameText}</td>
             <td>${playersText}</td>
-            <td>${passwordText}</td>
             <td>${buttonHtml}</td>
         `;
         console.log(`部屋の行を追加: ID: ${room.id}, 名前: ${roomNameText}, ステータス: ${room.status}`);
@@ -706,7 +773,8 @@ socket.on('roomCreated', (roomId) => {
 socket.on('roomJoined', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
-    joinRoomModal.style.display = 'none'; // モーダルを閉じる
+    joinRoomModal.style.display = 'none'; // 通常の参加モーダルを閉じる
+    joinByIdModal.style.display = 'none'; // ルームIDで入室モーダルも閉じる
     showRoomWaiting();
     console.log(`部屋参加成功: Room ID: ${roomId}`);
 });
