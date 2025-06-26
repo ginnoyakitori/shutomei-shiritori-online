@@ -17,7 +17,6 @@
         body {
             padding: 0px;
         }
-
         input, button, select {
             font-size: 1rem;
             margin: 5px;
@@ -428,10 +427,8 @@
     <button id="return-to-lobby-btn">待機画面に戻る</button>
 </div>
 
-<script src="/socket.io/socket.io.js"></script> <!-- Socket.IOライブラリの読み込みを<body>の最後に移動 -->
-<script> <!-- type="module" を削除 -->
-document.addEventListener('DOMContentLoaded', () => {
-
+<script src="/socket.io/socket.io.js"></script>
+<script>
 // Socket.IO クライアントの初期化
 const socket = io();
 
@@ -461,6 +458,7 @@ const joinByIdModal = document.getElementById("join-by-id-modal");
 const joinByIdRoomIdInput = document.getElementById("join-by-id-room-id");
 const joinByIdNicknameInput = document.getElementById("join-by-id-nickname");
 const confirmJoinByIdBtn = document.getElementById("confirm-join-by-id-btn");
+// ここでタイプミスを修正: document の再割り当てを削除
 const cancelJoinByIdBtn = document.getElementById("cancel-join-by-id-btn");
 
 
@@ -487,7 +485,7 @@ const submitBtn = document.getElementById("submit-btn");
 
 const resultBox = document.getElementById("result-box");
 const gameOverMessageEl = document.getElementById("game-over-message");
-const correctAnswererInfoEl = document.getElementById("correct-answerer-info"); // タイプミス修正
+const correctAnswererInfoEl = document.getElementById("correct-answerer-info");
 const correctAnswerDisplayEl = document.getElementById("correct-answer-display");
 const timeTakenDisplayEl = document.getElementById("time-taken-display");
 const returnToLobbyBtn = document.getElementById("return-to-lobby-btn");
@@ -811,7 +809,7 @@ socket.on('roomState', (room) => {
         showResult();
         gameOverMessageEl.textContent = `ゲーム終了！`;
         if (room.correctAnswerer && room.correctAnswererTime !== null) {
-            const correctAnswererName = room.players[room.correctAnswerer] ? room.players[room.correctAnswerer].name : '不明なプレイヤー';
+            const correctAnswererName = room.correctAnswererName;
             correctAnswererInfoEl.innerHTML = `最も早かったのは **${correctAnswererName}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
             correctAnswererInfoEl.style.color = '#2e7d32';
             correctAnswererInfoEl.style.fontWeight = 'bold';
@@ -1024,7 +1022,6 @@ document.getElementById("modify-btn").addEventListener("click", () => {
 answerEl.addEventListener("keydown", e => e.preventDefault());
 answerEl.addEventListener("beforeinput", e => e.preventDefault());
 
-});
 </script>
 </body>
 </html>
