@@ -334,7 +334,8 @@
 <div id="lobby-box">
     <h2>部屋一覧</h2>
     <button id="show-create-room-modal-btn">部屋を作成</button>
-    <button id="show-join-by-id-modal-btn">ルームIDで入室</button> <table id="room-list">
+    <button id="show-join-by-id-modal-btn">ルームIDで入室</button>
+    <table id="room-list">
         <thead>
             <tr>
                 <th>部屋名</th>
@@ -428,8 +429,8 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script> <!-- Socket.IOライブラリの読み込みを<body>の最後に移動 -->
-<script type="module">
-document.addEventListener('DOMContentLoaded', () => { // DOMContentLoadedイベントリスナーを追加
+<script> <!-- type="module" を削除 -->
+document.addEventListener('DOMContentLoaded', () => {
 
 // Socket.IO クライアントの初期化
 const socket = io();
@@ -437,18 +438,17 @@ const socket = io();
 // ===== DOM要素の取得 =====
 const mainTitle = document.getElementById("main-title");
 const lobbyBox = document.getElementById("lobby-box");
-const roomListTable = document.getElementById("room-list"); // table要素を取得
-const roomListTableBody = roomListTable.querySelector("tbody"); // tbody要素を取得
+const roomListTable = document.getElementById("room-list");
+const roomListTableBody = roomListTable.querySelector("tbody");
 
-// 新しいボタンの取得
 const showCreateRoomModalBtn = document.getElementById("show-create-room-modal-btn");
 const showJoinByIdModalBtn = document.getElementById("show-join-by-id-modal-btn");
 
 const createRoomModal = document.getElementById("create-room-modal");
 const createRoomNameInput = document.getElementById("create-room-name");
 const createNicknameInput = document.getElementById("create-nickname");
-const confirmCreateRoomBtn = document.getElementById("confirm-create-room-btn"); // 定義を追加
-const cancelCreateRoomBtn = document.getElementById("cancel-create-room-btn"); // 定義を追加
+const confirmCreateRoomBtn = document.getElementById("confirm-create-room-btn");
+const cancelCreateRoomBtn = document.getElementById("cancel-create-room-btn");
 
 const joinRoomModal = document.getElementById("join-room-modal");
 const joinRoomModalTitle = document.getElementById("join-room-modal-title");
@@ -457,7 +457,6 @@ const confirmJoinRoomBtn = document.getElementById("confirm-join-room-btn");
 const cancelJoinRoomBtn = document.getElementById("cancel-join-room-btn");
 const joiningRoomIdInput = document.getElementById("joining-room-id");
 
-// ルームIDで入室用モーダルの要素
 const joinByIdModal = document.getElementById("join-by-id-modal");
 const joinByIdRoomIdInput = document.getElementById("join-by-id-room-id");
 const joinByIdNicknameInput = document.getElementById("join-by-id-nickname");
@@ -470,7 +469,7 @@ const currentRoomNameEl = document.getElementById("current-room-name");
 const currentRoomIdEl = document.getElementById("current-room-id");
 const playerListEl = document.getElementById("player-list");
 const hostControls = document.getElementById("host-controls");
-const toggleRoomVisibilityBtn = document.getElementById("toggle-room-visibility-btn"); // 追加
+const toggleRoomVisibilityBtn = document.getElementById("toggle-room-visibility-btn");
 const quizTypeSelection = document.getElementById("quiz-type-selection");
 const quizTypeBtns = document.querySelectorAll(".quiz-type-btn");
 const selectedQuizTypeDisplay = document.getElementById("selected-quiz-type-display");
@@ -488,15 +487,14 @@ const submitBtn = document.getElementById("submit-btn");
 
 const resultBox = document.getElementById("result-box");
 const gameOverMessageEl = document.getElementById("game-over-message");
-const correctAnswererInfoEl = document.getElementById("correct-answerer-info"); // Re-fixed a typo here
+const correctAnswererInfoEl = document.getElementById("correct-answerer-info"); // タイプミス修正
 const correctAnswerDisplayEl = document.getElementById("correct-answer-display");
 const timeTakenDisplayEl = document.getElementById("time-taken-display");
 const returnToLobbyBtn = document.getElementById("return-to-lobby-btn");
 
-
 // ===== グローバル変数 =====
 let currentRoomId = null;
-let myPlayerId = null; // Socket.IO接続時に自動で割り当てられる
+let myPlayerId = null;
 let isHost = false;
 let gameStartTime = null; 
 
@@ -506,18 +504,16 @@ function showLobby() {
     roomBox.style.display = "none";
     quizBox.style.display = "none";
     resultBox.style.display = "none";
-    mainTitle.style.display = "block";
+    mainTitle.style.display = "block"; 
     createRoomModal.style.display = "none";
     joinRoomModal.style.display = "none";
     joinByIdModal.style.display = "none";
     currentRoomId = null;
     myPlayerId = socket.id; 
     isHost = false;
-    console.log("ロビー画面を表示しました。"); // Displayed lobby screen.
-    // ロビーに戻る際、部屋リストを最新の状態に更新するためにサーバーにリクエスト
-    // When returning to the lobby, request the latest room list from the server to update it.
-    socket.emit('requestRoomList'); // サーバーに最新の部屋リストを要求するイベント (Event to request the latest room list from the server)
-    roomListTable.style.display = 'table'; // ロビー表示時は部屋リストテーブルを常に表示 (Always display room list table when lobby is shown)
+    console.log("ロビー画面を表示しました。"); 
+    socket.emit('requestRoomList');
+    roomListTable.style.display = 'table';
 }
 
 function showRoomWaiting() {
@@ -526,7 +522,7 @@ function showRoomWaiting() {
     quizBox.style.display = "none";
     resultBox.style.display = "none";
     mainTitle.style.display = "none";
-    console.log("部屋待機画面を表示しました。"); // Displayed room waiting screen.
+    console.log("部屋待機画面を表示しました。");
 }
 
 function showQuizGame() {
@@ -535,211 +531,174 @@ function showQuizGame() {
     quizBox.style.display = "block";
     resultBox.style.display = "none";
     mainTitle.style.display = "none";
-    console.log("クイズゲーム画面を表示しました。"); // Displayed quiz game screen.
+    console.log("クイズゲーム画面を表示しました。");
 }
 
 function showResult() {
     lobbyBox.style.display = "none";
     roomBox.style.display = "none";
-    quizBox.style.display = "block"; // 結果表示はquiz-box上に表示されるように (Result display will appear on quiz-box)
+    quizBox.style.display = "block";
     resultBox.style.display = "block";
     mainTitle.style.display = "none";
-    console.log("結果画面を表示しました。"); // Displayed result screen.
+    console.log("結果画面を表示しました。");
 }
 
 // ===== イベントリスナー =====
 
-// 新しい「部屋を作成」ボタンのクリックイベント (Click event for the new "Create Room" button)
 showCreateRoomModalBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'block';
     createRoomNameInput.value = ''; 
     createNicknameInput.value = ''; 
-    console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。"); // Opened room creation modal from "Create Room" button.
+    console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。");
 });
 
-// 「ルームIDで入室」ボタンのクリックイベント (Click event for the "Join by Room ID" button)
 showJoinByIdModalBtn.addEventListener('click', () => {
     joinByIdModal.style.display = 'block';
     joinByIdRoomIdInput.value = ''; 
     joinByIdNicknameInput.value = ''; 
-    console.log("「ルームIDで入室」モーダルを開きました。"); // Opened "Join by Room ID" modal.
+    console.log("「ルームIDで入室」モーダルを開きました。");
 });
 
-
-// 部屋参加ボタンクリック (動的に生成されるので親要素にイベント委譲)
-// Room join button click (event delegation to parent element since it's dynamically generated)
 roomListTableBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-button')) {
         const roomId = e.target.dataset.roomId;
         const roomName = e.target.dataset.roomName; 
-        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: Join`); // Table room button clicked:
+        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: Join`); 
 
         if (e.target.classList.contains('join')) {
             joinRoomModal.style.display = 'block';
-            joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`; // Join room "${roomName}"
-            joinNicknameInput.value = ''; // ニックネーム入力欄をクリア (Clear nickname input field)
+            joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
+            joinNicknameInput.value = '';
             joiningRoomIdInput.value = roomId;
-            console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`); // Opened room join modal:
+            console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`);
         }
     }
 });
 
-// 部屋作成モーダル内の「作成」ボタン ( "Create" button inside room creation modal)
 confirmCreateRoomBtn.addEventListener('click', () => {
-    console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)"); // "Create" button inside modal was clicked.
+    console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)");
     const roomName = createRoomNameInput.value.trim();
     const nickname = createNicknameInput.value.trim();
 
     if (!roomName || !nickname) {
-        alert('部屋名とニックネームは必須です。'); // Room name and nickname are required.
-        console.warn("部屋名またはニックネームが入力されていません。alertが表示されました。"); // Room name or nickname not entered. Alert displayed.
+        alert('部屋名とニックネームは必須です。');
+        console.warn("部屋名またはニックネームが入力されていません。");
         return;
     }
-    console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`); // Sending room creation request via Socket.IO...
+    console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`);
     socket.emit('createRoom', { roomName, nickname });
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'none';
-    console.log("部屋作成モーダルを閉じました。"); // Closed room creation modal.
+    console.log("部屋作成モーダルを閉じました。");
 });
 
-// 部屋参加モーダル内の「入室」ボタン ( "Enter Room" button inside room join modal)
 confirmJoinRoomBtn.addEventListener('click', () => {
-    console.log("モーダル内の「入室」ボタンがクリックされました。"); // "Enter Room" button inside modal was clicked.
+    console.log("モーダル内の「入室」ボタンがクリックされました。");
     const roomId = joiningRoomIdInput.value;
     const nickname = joinNicknameInput.value.trim();
     if (!nickname) {
-        alert('ニックネームは必須です。'); // Nickname is required.
-        console.warn("ニックネームが入力されていません。alertが表示されました。"); // Nickname not entered. Alert displayed.
+        alert('ニックネームは必須です。');
+        console.warn("ニックネームが入力されていません。");
         return;
     }
-    console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`); // Sending room join request via Socket.IO...
+    console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`);
     socket.emit('joinRoom', { roomId, nickname });
 });
 
 cancelJoinRoomBtn.addEventListener('click', () => {
     joinRoomModal.style.display = 'none';
-    console.log("部屋参加モーダルを閉じました。"); // Closed room join modal.
+    console.log("部屋参加モーダルを閉じました。");
 });
 
-
-// ルームIDで入室モーダル内の「入室」ボタン ( "Enter Room" button inside "Join by Room ID" modal)
 confirmJoinByIdBtn.addEventListener('click', () => {
     const roomId = joinByIdRoomIdInput.value.trim();
     const nickname = joinByIdNicknameInput.value.trim();
 
     if (!roomId || roomId.length !== 4 || isNaN(roomId)) {
-        alert('有効な4桁のルームIDを入力してください。'); // Please enter a valid 4-digit room ID.
+        alert('有効な4桁のルームIDを入力してください。');
         return;
     }
     if (!nickname) {
-        alert('ニックネームは必須です。'); // Nickname is required.
+        alert('ニックネームは必須です。');
         return;
     }
-    console.log(`ルームIDで入室リクエストをSocket.IOで送信中... ルームID: ${roomId}, ニックネーム: ${nickname}`); // Sending join request by Room ID via Socket.IO...
+    console.log(`ルームIDで入室リクエストをSocket.IOで送信中... ルームID: ${roomId}, ニックネーム: ${nickname}`);
     socket.emit('joinRoom', { roomId, nickname });
 });
 
 cancelJoinByIdBtn.addEventListener('click', () => {
     joinByIdModal.style.display = 'none';
-    console.log("ルームIDで入室モーダルを閉じました。"); // Closed "Join by Room ID" modal.
+    console.log("ルームIDで入室モーダルを閉じました。");
 });
 
-// 部屋待機画面の「部屋を一覧に表示/非表示」ボタン (ホストのみ)
-// "Show/Hide Room in List" button on room waiting screen (host only)
 toggleRoomVisibilityBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return;
     socket.emit('toggleRoomVisibility', currentRoomId);
-    console.log(`部屋 ${currentRoomId} の一覧表示状態を切り替えるリクエストを送信しました。`); // Sent request to toggle visibility of room ${currentRoomId} in list.
+    console.log(`部屋 ${currentRoomId} の一覧表示状態を切り替えるリクエストを送信しました。`);
 });
 
-
-// 準備完了ボタン (Ready button)
 readyBtn.addEventListener('click', () => {
     if (!currentRoomId) return;
-    // myPlayerIdはshowLobby()やroomCreated/roomJoinedで設定される
-    // roomStateイベントで最新のroom.playersの状態を取得し、そこからmyPlayerのready状態を判断する
-    // 現在のUIの表示と、サーバーの最新の状態が食い違う可能性があるので、サーバーから送られてきたroomStateを信頼するべき
-    // roomStateイベントでmyPlayerの状態を更新し、readyBtnの表示を適切に設定するようにする
-
-    // roomStateイベントでmyPlayerのready状態を更新し、それに従って準備状態を切り替える
-    // ここでは単純に現在の表示状態を切り替えるのではなく、サーバーに現在の状態を問わず"ready"にしたいか"unready"にしたいかを伝える
-    const currentReadyStatus = readyBtn.classList.contains('unready'); // 'unready'クラスがあれば「準備解除」状態 ('unready' class means "unready" state)
+    const currentReadyStatus = readyBtn.classList.contains('unready');
     socket.emit('setReady', { roomId: currentRoomId, isReady: !currentReadyStatus });
-    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${!currentReadyStatus}`); // Sent ready status change request: Room ID: ${currentRoomId}, Status: ${!currentReadyStatus}
+    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${!currentReadyStatus}`);
 });
 
-// 部屋を出るボタン (Leave Room button)
 leaveRoomBtn.addEventListener('click', () => {
     if (currentRoomId) {
         socket.emit('leaveRoom', currentRoomId);
-        console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`); // Sent room exit request: Room ID: ${currentRoomId}
+        console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`);
     }
-    // Socket.IOの再接続はサーバーからの切断イベントで自動的に行われるため、
-    // ここで明示的に disconnect/connect を呼ぶ必要はない。
-    // leaveRoomが成功した場合、roomStateでロビー画面に遷移するはず。
-    // 強制的にロビーに戻す場合は、showLobby()を呼ぶ。
-    // ただし、サーバー側で部屋が削除されたり、新しいホストが選ばれたりするため
-    // クライアント側で部屋の状態を待ってから画面遷移するのが望ましい。
-    // 現在の leaveRoom イベントの後に emitRoomList と emitRoomState が呼ばれるので、
-    // それらのイベントによってUIが更新されるのを待つのが自然。
-    // しかし、即座にロビーに戻したい場合は showLobby() を直接呼んでも良い。
-    showLobby(); // 強制的にロビーに戻る (Force return to lobby)
+    showLobby();
 });
 
-// クイズタイプ選択ボタン (ホストのみ) (Quiz type selection buttons (host only))
 quizTypeBtns.forEach(button => {
     button.addEventListener('click', () => {
         if (!isHost) return;
         const type = button.dataset.type;
         socket.emit('selectQuizType', { roomId: currentRoomId, type: type });
-        console.log(`クイズタイプ選択リクエスト送信: Room ID: ${currentRoomId}, タイプ: ${type}`); // Sent quiz type selection request: Room ID: ${currentRoomId}, Type: ${type}
+        console.log(`クイズタイプ選択リクエスト送信: Room ID: ${currentRoomId}, タイプ: ${type}`);
     });
 });
 
-// ゲーム開始ボタン (ホストのみ) (Start Game button (host only))
 startGameBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return;
     socket.emit('startGame', currentRoomId);
-    console.log(`ゲーム開始リクエスト送信: Room ID: ${currentRoomId}`); // Sent game start request: Room ID: ${currentRoomId}
+    console.log(`ゲーム開始リクエスト送信: Room ID: ${currentRoomId}`);
 });
 
-// 解答送信ボタン (Submit Answer button)
 submitBtn.addEventListener('click', () => {
     if (!currentRoomId) return;
     const answer = answerEl.value.trim();
     if (answer) {
         socket.emit('submitAnswer', currentRoomId, answer);
-        console.log(`解答送信リクエスト: Room ID: ${currentRoomId}, 解答: ${answer}`); // Sent answer submission request: Room ID: ${currentRoomId}, Answer: ${answer}
+        console.log(`解答送信リクエスト: Room ID: ${currentRoomId}, 解答: ${answer}`);
     }
 });
 
-// 待機画面に戻るボタン (結果画面からホストのみ) (Return to Lobby button (host only, from result screen))
 returnToLobbyBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return;
     socket.emit('returnToLobby', currentRoomId);
-    console.log(`ロビーに戻るリクエスト送信 (ホスト): Room ID: ${currentRoomId}`); // Sent return to lobby request (host): Room ID: ${currentRoomId}
+    console.log(`ロビーに戻るリクエスト送信 (ホスト): Room ID: ${currentRoomId}`);
 });
 
 // ===== Socket.IO イベントハンドラ =====
 
-// 部屋リストの更新 (Update room list)
 socket.on('roomList', (rooms) => {
-    console.log("--- roomList イベントを受信しました ---"); // --- roomList event received ---
-    console.log("受信した部屋データ:", rooms); // Received room data:
-    roomListTableBody.innerHTML = ''; // テーブルの中身をクリア (Clear table contents)
+    console.log("--- roomList イベントを受信しました ---");
+    console.log("受信した部屋データ:", rooms);
+    roomListTableBody.innerHTML = '';
     
     if (!rooms || rooms.length === 0) {
-        console.log("部屋データが空または無効です。部屋一覧には何も表示されません。"); // Room data is empty or invalid. Nothing will be displayed in the room list.
+        console.log("部屋データが空または無効です。部屋一覧には何も表示されません。");
         return;
     }
 
     rooms.forEach(room => {
-        // 部屋の作成者が「非表示」に設定している部屋はリストに表示しない
-        // Do not display rooms that the creator has set to "hidden" in the list.
         if (!room.isVisible) {
-            console.log(`部屋 ${room.id} は作成者によって非表示に設定されています。`); // Room ${room.id} is set to hidden by the creator.
+            console.log(`部屋 ${room.id} は作成者によって非表示に設定されています。`);
             return;
         }
 
@@ -749,7 +708,7 @@ socket.on('roomList', (rooms) => {
         let roomNameText = room.name;
 
         const isDisabled = room.status === 'playing' ? 'disabled' : '';
-        buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" ${isDisabled}>入室</button>`; // Enter Room
+        buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" ${isDisabled}>入室</button>`;
         playersText = `${room.playersCount}/${room.maxPlayers}`;
         
         row.innerHTML = `
@@ -757,51 +716,45 @@ socket.on('roomList', (rooms) => {
             <td>${playersText}</td>
             <td>${buttonHtml}</td>
         `;
-        console.log(`部屋の行を追加: ID: ${room.id}, 名前: ${roomNameText}, ステータス: ${room.status}`); // Added room row:
+        console.log(`部屋の行を追加: ID: ${room.id}, 名前: ${roomNameText}, ステータス: ${room.status}`);
     });
 });
 
-// 部屋作成成功 (Room creation successful)
 socket.on('roomCreated', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
     isHost = true;
     createRoomModal.style.display = 'none'; 
     showRoomWaiting();
-    console.log(`部屋作成成功: Room ID: ${roomId}`); // Room creation successful:
+    console.log(`部屋作成成功: Room ID: ${roomId}`);
 });
 
-// 部屋参加成功 (Room joined successfully)
 socket.on('roomJoined', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
     joinRoomModal.style.display = 'none';
     joinByIdModal.style.display = 'none';
     showRoomWaiting();
-    console.log(`部屋参加成功: Room ID: ${roomId}`); // Room joined successfully:
+    console.log(`部屋参加成功: Room ID: ${roomId}`);
 });
 
-// 部屋のエラー (Room error)
 socket.on('roomError', (message) => {
-    alert(message);
+    alert(message); 
     showLobby(); 
-    console.error(`部屋エラー: ${message}`); // Room error:
+    console.error(`部屋エラー: ${message}`);
 });
 
-// 部屋の状態更新 (Update room state)
 socket.on('roomState', (room) => {
-    console.log("--- roomState イベントを受信しました ---"); // --- roomState event received ---
-    console.log("受信した部屋の状態:", room); // Received room state:
+    console.log("--- roomState イベントを受信しました ---");
+    console.log("受信した部屋の状態:", room);
 
-    // 現在の部屋IDが設定されていない場合、または受信した部屋IDが現在の部屋と異なり、かつ自分がその部屋のプレイヤーの場合、部屋待機画面に遷移
-    // If current room ID is not set, or if the received room ID is different from the current room, and the current user is a player in that room, transition to the room waiting screen.
     if (!currentRoomId || (room.id !== currentRoomId && Object.values(room.players).some(p => p.id === socket.id))) {
         currentRoomId = room.id;
         myPlayerId = socket.id;
         showRoomWaiting();
-        console.log(`部屋の状態更新により画面切り替え: Room ID: ${room.id}`); // Screen switched due to room state update:
+        console.log(`部屋の状態更新により画面切り替え: Room ID: ${room.id}`);
     } else if (currentRoomId && room.id !== currentRoomId) {
-        console.log("現在の部屋と一致しないroomStateイベントを無視しました (自分はこの部屋にいません)。"); // Ignored roomState event that does not match the current room (I am not in this room).
+        console.log("現在の部屋と一致しないroomStateイベントを無視しました (自分はこの部屋にいません)。");
         return;
     }
 
@@ -809,8 +762,6 @@ socket.on('roomState', (room) => {
     currentRoomIdEl.textContent = room.id;
     
     playerListEl.innerHTML = '';
-    // room.players はオブジェクトなので Object.values() で配列に変換してループ
-    // Since room.players is an object, convert it to an array using Object.values() and loop.
     Object.values(room.players).forEach(player => {
         const li = document.createElement('li');
         li.id = player.id;
@@ -825,14 +776,12 @@ socket.on('roomState', (room) => {
         playerListEl.appendChild(li);
     });
 
-    // myPlayerの特定も Object.values() を使う (Also use Object.values() to identify myPlayer)
     const myPlayer = Object.values(room.players).find(p => p.id === myPlayerId);
     isHost = myPlayer ? myPlayer.isHost : false;
 
     if (isHost) {
         hostControls.style.display = 'block';
-        // 部屋の表示/非表示ボタンのテキストを更新 (Update text of room show/hide button)
-        toggleRoomVisibilityBtn.textContent = room.isVisible ? '部屋を一覧に非表示' : '部屋を一覧に表示'; // Hide room from list / Show room in list
+        toggleRoomVisibilityBtn.textContent = room.isVisible ? '部屋を一覧に非表示' : '部屋を一覧に表示';
         
         quizTypeBtns.forEach(btn => btn.classList.remove('selected'));
         if (room.quizType) {
@@ -840,11 +789,9 @@ socket.on('roomState', (room) => {
             if (selectedBtn) {
                  selectedBtn.classList.add('selected');
             }
-            // 表示テキストを「国名クイズ」または「首都名クイズ」に修正
-            // Correct display text to "Country Name Quiz" or "Capital Name Quiz"
             selectedQuizTypeDisplay.textContent = `選択中のクイズ: ${room.quizType === 'kokumei' ? '国名クイズ' : '首都名クイズ'}`;
         } else {
-            selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください'; // Please select a quiz type
+            selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
 
         startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && Object.keys(room.players).length >= 1 && Object.values(room.players).every(p => p.ready));
@@ -855,51 +802,47 @@ socket.on('roomState', (room) => {
     }
 
     if (myPlayer) {
-        readyBtn.textContent = myPlayer.ready ? '準備解除' : '準備完了'; // Unready / Ready
+        readyBtn.textContent = myPlayer.ready ? '準備解除' : '準備完了';
         readyBtn.classList.toggle('unready', myPlayer.ready);
         readyBtn.disabled = (room.status !== 'waiting');
     }
     
     if (room.status === 'finished') {
         showResult();
-        gameOverMessageEl.textContent = `ゲーム終了！`; // Game Over!
+        gameOverMessageEl.textContent = `ゲーム終了！`;
         if (room.correctAnswerer && room.correctAnswererTime !== null) {
-            // room.players[room.correctAnswerer] で正解者の名前を取得するために修正
-            // Corrected to get the correct answerer's name from room.players[room.correctAnswerer]
-            const correctAnswererName = room.players[room.correctAnswerer] ? room.players[room.correctAnswerer].name : '不明なプレイヤー'; // Unknown player
-            correctAnswererInfoEl.innerHTML = `最も早かったのは **${correctAnswererName}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`; // The fastest was **${correctAnswererName}**!<br>Time: ${room.correctAnswererTime.toFixed(2)} seconds.
+            const correctAnswererName = room.players[room.correctAnswerer] ? room.players[room.correctAnswerer].name : '不明なプレイヤー';
+            correctAnswererInfoEl.innerHTML = `最も早かったのは **${correctAnswererName}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
             correctAnswererInfoEl.style.color = '#2e7d32';
             correctAnswererInfoEl.style.fontWeight = 'bold';
         } else {
-            correctAnswererInfoEl.textContent = '正解者はいませんでした...'; // There were no correct answerers...
+            correctAnswererInfoEl.textContent = '正解者はいませんでした...';
             correctAnswererInfoEl.style.color = '#d32f2f';
             correctAnswererInfoEl.style.fontWeight = 'normal';
         }
-        correctAnswerDisplayEl.textContent = `正解は「${room.correctAnswer}」でした。`; // The correct answer was "${room.correctAnswer}".
+        correctAnswerDisplayEl.textContent = `正解は「${room.correctAnswer}」でした。`;
     }
 });
 
-// ゲーム開始 (Game started)
 socket.on('gameStarted', () => {
     showQuizGame();
     gameStartTime = Date.now();
     feedbackEl.textContent = '';
     answerEl.value = '';
     timerEl.textContent = '0.00';
-    console.log("ゲームが開始されました。"); // Game started.
+    console.log("ゲームが開始されました。");
 });
 
-// 新しい問題が出題 (New question presented)
 socket.on('newQuestion', (data) => {
     questionEl.textContent = data.text;
-    questionNumberEl.textContent = `問題 ${data.questionNumber}`; // Question ${data.questionNumber}
+    questionNumberEl.textContent = `問題 ${data.questionNumber}`;
     answerEl.value = '';
     feedbackEl.textContent = '';
     submitBtn.disabled = false;
     answerEl.readOnly = false;
     gameStartTime = Date.now();
     startTimer();
-    console.log(`新しい問題が出題: ${data.text} (問題 ${data.questionNumber})`); // New question presented: ${data.text} (Question ${data.questionNumber})
+    console.log(`新しい問題が出題: ${data.text} (問題 ${data.questionNumber})`);
 });
 
 let timerIntervalId;
@@ -907,49 +850,48 @@ function startTimer() {
     if (timerIntervalId) clearInterval(timerIntervalId);
     timerIntervalId = setInterval(() => {
         const elapsed = (Date.now() - gameStartTime) / 1000;
-        timerEl.textContent = `${elapsed.toFixed(2)}秒`; // ${elapsed.toFixed(2)} seconds
+        timerEl.textContent = `${elapsed.toFixed(2)}秒`;
     }, 10);
 }
 
 function stopTimer() {
     clearInterval(timerIntervalId);
     timerIntervalId = null;
-    console.log("タイマー停止。"); // Timer stopped.
+    console.log("タイマー停止。");
 }
 
-// 正解者通知 (Correct answer notification)
 socket.on('correctAnswer', (data) => {
     stopTimer();
-    feedbackEl.textContent = '正解！'; // Correct!
+    feedbackEl.textContent = '正解！';
     answerEl.readOnly = true;
     submitBtn.disabled = true;
-    console.log(`正解者が出ました: ${data.playerId}, スコア: ${data.score}`); // Correct answerer: ${data.playerId}, Score: ${data.score}
+    console.log(`正解者が出ました: ${data.playerId}, スコア: ${data.score}`);
 });
 
-// ゲーム終了（正解発表と結果表示の準備）(Game over (preparation for correct answer announcement and result display))
 socket.on('gameOver', (data) => {
     stopTimer();
     showResult();
-    gameOverMessageEl.textContent = `ゲーム終了！`; // Game Over!
+    gameOverMessageEl.textContent = `ゲーム終了！`;
     if (data.correctAnswererId && data.correctAnswererTime !== null) {
-        correctAnswererInfoEl.innerHTML = `最も早かったのは **${data.correctAnswererName}** さん！<br>タイム: ${data.correctAnswererTime.toFixed(2)}秒`; // The fastest was **${data.correctAnswererName}**!<br>Time: ${data.correctAnswererTime.toFixed(2)} seconds.
+        const correctAnswererName = data.correctAnswererName;
+        correctAnswererInfoEl.innerHTML = `最も早かったのは **${correctAnswererName}** さん！<br>タイム: ${data.correctAnswererTime.toFixed(2)}秒`;
         correctAnswererInfoEl.style.color = '#2e7d32';
         correctAnswererInfoEl.style.fontWeight = 'bold';
     } else {
-        correctAnswererInfoEl.textContent = '正解者はいませんでした...'; // There were no correct answerers...
+        correctAnswererInfoEl.textContent = '正解者はいませんでした...';
         correctAnswererInfoEl.style.color = '#d32f2f';
         correctAnswererInfoEl.style.fontWeight = 'normal';
     }
-    correctAnswerDisplayEl.textContent = `正解は「${data.correctAnswer}」でした。`; // The correct answer was "${data.correctAnswer}".
-    console.log("ゲーム終了イベント受信。"); // Game over event received.
+    correctAnswerDisplayEl.textContent = `正解は「${data.correctAnswer}」でした。`;
+    console.log("ゲーム終了イベント受信。");
 });
 
 socket.on('feedback', (message) => {
     feedbackEl.textContent = message;
-    console.log(`フィードバック: ${message}`); // Feedback:
+    console.log(`フィードバック: ${message}`);
 });
 
-// ===== フリックキーボード処理 (変更なし) ===== (Flick keyboard processing (unchanged))
+// ===== フリックキーボード処理 (変更なし) =====
 const flickData = {
     あ: ["ウ", "エ", "オ", "イ", "ア"],
     か: ["ク", "ケ", "コ", "キ", "カ"],
@@ -1079,11 +1021,10 @@ document.getElementById("modify-btn").addEventListener("click", () => {
     answerEl.value = rest + next;
 });
 
-// 物理入力・IME無効化 (Disable physical input and IME)
 answerEl.addEventListener("keydown", e => e.preventDefault());
 answerEl.addEventListener("beforeinput", e => e.preventDefault());
 
-}); // DOMContentLoadedの終わり (End of DOMContentLoaded)
+});
 </script>
 </body>
 </html>
