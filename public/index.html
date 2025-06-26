@@ -217,6 +217,15 @@
         #show-join-by-id-modal-btn {
             background-color: #6c757d; /* 異なる色で視認性向上 */
         }
+        #toggle-room-visibility-btn { /* 部屋待機画面の表示/非表示ボタン */
+            background-color: #ff9800; /* オレンジ色 */
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
 
 
         /* ルーム詳細画面 */
@@ -345,7 +354,6 @@
         <h3>新しい部屋を作成</h3>
         <input type="text" id="create-room-name" placeholder="部屋名" maxlength="20"><br>
         <input type="text" id="create-nickname" placeholder="あなたのニックネーム" maxlength="15"><br>
-        <br>
         <button id="confirm-create-room-btn">作成</button>
         <button id="cancel-create-room-btn">キャンセル</button>
     </div>
@@ -353,7 +361,6 @@
     <div id="join-room-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
         <h3 id="join-room-modal-title"></h3>
         <input type="text" id="join-nickname" placeholder="あなたのニックネーム" maxlength="15"><br>
-        <br>
         <button id="confirm-join-room-btn">入室</button>
         <button id="cancel-join-room-btn">キャンセル</button>
         <input type="hidden" id="joining-room-id">
@@ -376,7 +383,7 @@
         <ul id="player-list"></ul>
 
         <div id="host-controls" style="display: none;">
-            <h4>クイズタイプを選択:</h4>
+            <button id="toggle-room-visibility-btn">部屋を一覧に非表示</button> <h4>クイズタイプを選択:</h4>
             <div id="quiz-type-selection">
                 <button class="quiz-type-btn" data-type="kokumei">首都名から国名</button>
                 <button class="quiz-type-btn" data-type="shutomei">国名から首都名</button>
@@ -405,6 +412,7 @@
         <button class="flick-btn" data-base="わ">
             <span class="hint top">ン</span>
             <span class="hint right">ー</span>
+            <span class="hint bottom"></span>
             <span class="hint left">ヲ</span>
             <span class="center">ワ</span>
         </button>
@@ -424,6 +432,8 @@
 </div>
 
 <script type="module">
+document.addEventListener('DOMContentLoaded', () => { // DOMContentLoadedイベントリスナーを追加
+
 // Socket.IO クライアントの初期化
 const socket = io();
 
@@ -435,18 +445,18 @@ const roomListTableBody = roomListTable.querySelector("tbody"); // tbody要素�
 
 // 新しいボタンの取得
 const showCreateRoomModalBtn = document.getElementById("show-create-room-modal-btn");
-const toggleRoomListBtn = document.getElementById("toggle-room-list-btn"); // 追加: 表示/非表示ボタン
-const showJoinByIdModalBtn = document.getElementById("show-join-by-id-modal-btn"); // 追加: ルームIDで入室ボタン
+const toggleRoomListBtn = document.getElementById("toggle-room-list-btn"); 
+const showJoinByIdModalBtn = document.getElementById("show-join-by-id-modal-btn");
 
 const createRoomModal = document.getElementById("create-room-modal");
 const createRoomNameInput = document.getElementById("create-room-name");
 const createNicknameInput = document.getElementById("create-nickname");
-// const createRoomPasswordInput = document.getElementById("create-room-password"); // 削除
+const confirmCreateRoomBtn = document.getElementById("confirm-create-room-btn"); // 定義を追加
+const cancelCreateRoomBtn = document.getElementById("cancel-create-room-btn"); // 定義を追加
 
 const joinRoomModal = document.getElementById("join-room-modal");
 const joinRoomModalTitle = document.getElementById("join-room-modal-title");
 const joinNicknameInput = document.getElementById("join-nickname");
-// const joinRoomPasswordInput = document.getElementById("join-room-password"); // 削除
 const confirmJoinRoomBtn = document.getElementById("confirm-join-room-btn");
 const cancelJoinRoomBtn = document.getElementById("cancel-join-room-btn");
 const joiningRoomIdInput = document.getElementById("joining-room-id");
@@ -464,6 +474,7 @@ const currentRoomNameEl = document.getElementById("current-room-name");
 const currentRoomIdEl = document.getElementById("current-room-id");
 const playerListEl = document.getElementById("player-list");
 const hostControls = document.getElementById("host-controls");
+const toggleRoomVisibilityBtn = document.getElementById("toggle-room-visibility-btn"); // 追加
 const quizTypeSelection = document.getElementById("quiz-type-selection");
 const quizTypeBtns = document.querySelectorAll(".quiz-type-btn");
 const selectedQuizTypeDisplay = document.getElementById("selected-quiz-type-display");
@@ -491,8 +502,8 @@ const returnToLobbyBtn = document.getElementById("return-to-lobby-btn");
 let currentRoomId = null;
 let myPlayerId = null;
 let isHost = false;
-let gameStartTime = null; // ゲームが開始された時刻
-let isRoomListVisible = true; // 部屋リストの表示状態を管理
+let gameStartTime = null; 
+let isRoomListVisible = true; // 部屋リストの表示状態を管理 (クライアント自身の設定)
 
 // ===== 初期表示 =====
 showLobby();
@@ -506,11 +517,13 @@ function showLobby() {
     mainTitle.style.display = "block";
     createRoomModal.style.display = "none";
     joinRoomModal.style.display = "none";
-    joinByIdModal.style.display = "none"; // 追加
+    joinByIdModal.style.display = "none";
     currentRoomId = null;
-    myPlayerId = socket.id; // ロビー画面でも自分のソケットIDはわかる
+    myPlayerId = socket.id; 
     isHost = false;
-    console.log("ロビー画面を表示しました。"); // ロギング追加
+    console.log("ロビー画面を表示しました。");
+    // ロビーに戻る際、部屋リストを最新の状態に更新するためにサーバーにリクエスト
+    socket.emit('requestRoomList'); // サーバーに最新の部屋リストを要求するイベント
 }
 
 function showRoomWaiting() {
@@ -519,7 +532,7 @@ function showRoomWaiting() {
     quizBox.style.display = "none";
     resultBox.style.display = "none";
     mainTitle.style.display = "none";
-    console.log("部屋待機画面を表示しました。"); // ロギング追加
+    console.log("部屋待機画面を表示しました。");
 }
 
 function showQuizGame() {
@@ -528,16 +541,16 @@ function showQuizGame() {
     quizBox.style.display = "block";
     resultBox.style.display = "none";
     mainTitle.style.display = "none";
-    console.log("クイズゲーム画面を表示しました。"); // ロギング追加
+    console.log("クイズゲーム画面を表示しました。");
 }
 
 function showResult() {
     lobbyBox.style.display = "none";
     roomBox.style.display = "none";
-    quizBox.style.display = "none";
+    quizBox.style.display = "block"; // 結果表示はquiz-box上に表示されるように
     resultBox.style.display = "block";
     mainTitle.style.display = "none";
-    console.log("結果画面を表示しました。"); // ロギング追加
+    console.log("結果画面を表示しました。");
 }
 
 // ===== イベントリスナー =====
@@ -545,30 +558,27 @@ function showResult() {
 // 新しい「部屋を作成」ボタンのクリックイベント
 showCreateRoomModalBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'block';
-    createRoomNameInput.value = ''; // 入力欄をクリア
-    createNicknameInput.value = ''; // 入力欄をクリア
+    createRoomNameInput.value = ''; 
+    createNicknameInput.value = ''; 
     console.log("「部屋を作成」ボタンから部屋作成モーダルを開きました。");
 });
 
-// 「部屋一覧を表示/非表示」ボタンのクリックイベント
+// 「部屋一覧を表示/非表示」ボタンのクリックイベント (クライアント自身の表示設定)
 toggleRoomListBtn.addEventListener('click', () => {
     isRoomListVisible = !isRoomListVisible;
     roomListTable.style.display = isRoomListVisible ? 'table' : 'none';
     toggleRoomListBtn.textContent = isRoomListVisible ? '部屋一覧を非表示' : '部屋一覧を表示';
-    console.log(`部屋一覧の表示状態を切り替えました: ${isRoomListVisible ? '表示' : '非表示'}`);
-    // 部屋リストの表示状態が変わったので、現在の部屋リストを再描画する
-    // socket.on('roomList') ハンドラ内で isRoomListVisible をチェックして描画を制御するため、
-    // ここで何か特別な処理は不要（roomListイベントが受信されれば自動的に反映される）
-    // もしroomListイベントが頻繁に発生しない場合は、現在の表示データを使ってローカルで再描画する必要があるが、
-    // サーバーからのroomListイベントでUIが更新されるため、このままでOK
+    console.log(`部屋一覧の表示状態を切り替えました (クライアント設定): ${isRoomListVisible ? '表示' : '非表示'}`);
+    // クライアントの表示設定が変更されたので、現在の部屋リストを再描画する
+    socket.emit('requestRoomList'); // サーバーに最新の部屋リストを要求して再描画
 });
 
 
 // 「ルームIDで入室」ボタンのクリックイベント
 showJoinByIdModalBtn.addEventListener('click', () => {
     joinByIdModal.style.display = 'block';
-    joinByIdRoomIdInput.value = ''; // 入力欄をクリア
-    joinByIdNicknameInput.value = ''; // 入力欄をクリア
+    joinByIdRoomIdInput.value = ''; 
+    joinByIdNicknameInput.value = ''; 
     console.log("「ルームIDで入室」モーダルを開きました。");
 });
 
@@ -577,16 +587,14 @@ showJoinByIdModalBtn.addEventListener('click', () => {
 roomListTableBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-button')) {
         const roomId = e.target.dataset.roomId;
-        const roomName = e.target.dataset.roomName; // 部屋名も取得
-        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: Join`); // ロギング追加
+        const roomName = e.target.dataset.roomName; 
+        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: Join`); 
 
         if (e.target.classList.contains('join')) {
-            // 参加モーダル表示
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
             joiningRoomIdInput.value = roomId;
-            // パスワード入力欄は削除されたため、ここでの表示/非表示ロジックも不要
-            console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`); // ロギング追加
+            console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`);
         }
     }
 });
@@ -594,17 +602,16 @@ roomListTableBody.addEventListener('click', (e) => {
 // 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
     console.log("モーダル内の「作成」ボタンがクリックされました。(addEventListener)");
-    const roomName = createRoomNameInput.value.trim();
+    const roomName = createRoomNameNameInput.value.trim(); // ここで `createRoomNameNameInput` とtypoがある可能性があります。
     const nickname = createNicknameInput.value.trim();
+
     if (!roomName || !nickname) {
         alert('部屋名とニックネームは必須です。');
         console.warn("部屋名またはニックネームが入力されていません。alertが表示されました。");
         return;
     }
     console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`);
-    // パスワードを削除
     socket.emit('createRoom', { roomName, nickname });
-    // モーダルはサーバーからのroomCreatedイベントで閉じる
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => {
@@ -623,9 +630,7 @@ confirmJoinRoomBtn.addEventListener('click', () => {
         return;
     }
     console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`);
-    // パスワードを削除
     socket.emit('joinRoom', { roomId, nickname });
-    // モーダルはサーバーからのroomJoinedイベントで閉じる
 });
 
 cancelJoinRoomBtn.addEventListener('click', () => {
@@ -648,12 +653,19 @@ confirmJoinByIdBtn.addEventListener('click', () => {
         return;
     }
     console.log(`ルームIDで入室リクエストをSocket.IOで送信中... ルームID: ${roomId}, ニックネーム: ${nickname}`);
-    socket.emit('joinRoom', { roomId, nickname }); // パスワードは不要
+    socket.emit('joinRoom', { roomId, nickname });
 });
 
 cancelJoinByIdBtn.addEventListener('click', () => {
     joinByIdModal.style.display = 'none';
     console.log("ルームIDで入室モーダルを閉じました。");
+});
+
+// 部屋待機画面の「部屋を一覧に表示/非表示」ボタン (ホストのみ)
+toggleRoomVisibilityBtn.addEventListener('click', () => {
+    if (!currentRoomId || !isHost) return;
+    socket.emit('toggleRoomVisibility', currentRoomId);
+    console.log(`部屋 ${currentRoomId} の一覧表示状態を切り替えるリクエストを送信しました。`);
 });
 
 
@@ -673,7 +685,6 @@ leaveRoomBtn.addEventListener('click', () => {
         socket.emit('leaveRoom', currentRoomId);
         console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`);
     }
-    // 接続を切断し、再接続することで新しいソケットIDを取得し、ロビーに戻る
     socket.disconnect();
     socket.connect();
     showLobby();
@@ -721,22 +732,22 @@ socket.on('roomList', (rooms) => {
     console.log("受信した部屋データ:", rooms);
     roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
     
-    // 部屋リストが非表示設定の場合、何もしない（テーブルは空のまま）
+    // クライアント自身の表示設定が「非表示」の場合、ここで終了
     if (!isRoomListVisible) {
-        console.log("部屋一覧は現在非表示に設定されています。");
+        console.log("部屋一覧は現在クライアント設定で非表示に設定されています。");
         return;
     }
 
-    // 「空き部屋」の行を表示しないため、roomsが空の場合はここで処理を終了
     if (!rooms || rooms.length === 0) {
         console.log("部屋データが空または無効です。部屋一覧には何も表示されません。");
         return;
     }
 
     rooms.forEach(room => {
-        // 空き部屋は表示しない
-        if (room.status === 'empty') { // この条件は通常発生しないが、念のため
-            return; // この部屋はスキップして次の部屋へ
+        // 部屋の作成者が「非表示」に設定している部屋はリストに表示しない
+        if (!room.isVisible) {
+            console.log(`部屋 ${room.id} は作成者によって非表示に設定されています。`);
+            return;
         }
 
         const row = roomListTableBody.insertRow();
@@ -744,9 +755,7 @@ socket.on('roomList', (rooms) => {
         let playersText = '';
         let roomNameText = room.name;
 
-        // 既存の部屋（waiting, playing, finished）のみを処理
         const isDisabled = room.status === 'playing' ? 'disabled' : '';
-        // パスワード有無の表示を削除
         buttonHtml = `<button class="room-button join" data-room-id="${room.id}" data-room-name="${roomNameText}" ${isDisabled}>入室</button>`;
         playersText = `${room.playersCount}/${room.maxPlayers}`;
         
@@ -764,7 +773,7 @@ socket.on('roomCreated', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
     isHost = true;
-    createRoomModal.style.display = 'none'; // モーダルを閉じる
+    createRoomModal.style.display = 'none'; 
     showRoomWaiting();
     console.log(`部屋作成成功: Room ID: ${roomId}`);
 });
@@ -773,8 +782,8 @@ socket.on('roomCreated', (roomId) => {
 socket.on('roomJoined', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
-    joinRoomModal.style.display = 'none'; // 通常の参加モーダルを閉じる
-    joinByIdModal.style.display = 'none'; // ルームIDで入室モーダルも閉じる
+    joinRoomModal.style.display = 'none';
+    joinByIdModal.style.display = 'none';
     showRoomWaiting();
     console.log(`部屋参加成功: Room ID: ${roomId}`);
 });
@@ -791,19 +800,15 @@ socket.on('roomState', (room) => {
     console.log("--- roomState イベントを受信しました ---");
     console.log("受信した部屋の状態:", room);
 
-    // 自分のプレイヤーIDがまだ設定されていなくて、かつroom.playersに自分がいる場合に画面を切り替える
-    // もしくは、現在の部屋IDと受信した部屋IDが一致しないが、自分がその部屋にいる場合も考慮
     if (!currentRoomId || (room.id !== currentRoomId && room.players.some(p => p.id === socket.id))) {
         currentRoomId = room.id;
         myPlayerId = socket.id;
         showRoomWaiting();
         console.log(`部屋の状態更新により画面切り替え: Room ID: ${room.id}`);
     } else if (currentRoomId && room.id !== currentRoomId) {
-        // 現在の部屋と一致しないroomStateイベントを無視 (自分がその部屋にいない場合)
         console.log("現在の部屋と一致しないroomStateイベントを無視しました (自分はこの部屋にいません)。");
         return;
     }
-
 
     currentRoomNameEl.textContent = room.name;
     currentRoomIdEl.textContent = room.id;
@@ -828,6 +833,9 @@ socket.on('roomState', (room) => {
 
     if (isHost) {
         hostControls.style.display = 'block';
+        // 部屋の表示/非表示ボタンのテキストを更新
+        toggleRoomVisibilityBtn.textContent = room.isVisible ? '部屋を一覧に非表示' : '部屋を一覧に表示';
+        
         quizTypeBtns.forEach(btn => btn.classList.remove('selected'));
         if (room.quizType) {
             const selectedBtn = document.querySelector(`.quiz-type-btn[data-type="${room.quizType}"]`);
@@ -839,8 +847,6 @@ socket.on('roomState', (room) => {
             selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
 
-        // ゲーム開始ボタンの有効/無効
-        // ゲームが待機中で、かつクイズタイプが選択されていれば有効
         startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && room.players.length >= 1 && room.players.every(p => p.ready));
         returnToLobbyBtn.style.display = (room.status === 'finished') ? 'block' : 'none';
     } else {
@@ -858,7 +864,7 @@ socket.on('roomState', (room) => {
         showResult();
         gameOverMessageEl.textContent = `ゲーム終了！`;
         if (room.correctAnswerer && room.correctAnswererTime !== null) {
-            correctAnswererInfoEl.innerHTML = `最も早かったのは **${room.correctAnswererName}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
+            correctAnswererInfoEl.innerHTML = `最も早かったのは **${room.players[room.correctAnswerer].name}** さん！<br>タイム: ${room.correctAnswererTime.toFixed(2)}秒`;
             correctAnswererInfoEl.style.color = '#2e7d32';
             correctAnswererInfoEl.style.fontWeight = 'bold';
         } else {
@@ -868,24 +874,6 @@ socket.on('roomState', (room) => {
         }
         correctAnswerDisplayEl.textContent = `正解は「${room.correctAnswer}」でした。`;
     }
-});
-
-// 新しいプレイヤーが参加 (デバッグ用。roomStateで更新される)
-socket.on('playerJoined', (player) => {
-    console.log(`プレイヤーが参加しました: ${player.name} (${player.id})`);
-});
-
-// プレイヤーが退出 (デバッグ用。roomStateで更新される)
-socket.on('playerLeft', (playerId, playerName) => {
-    console.log(`プレイヤーが退出しました: ${playerName} (${playerId})`);
-});
-
-// 新しいホストが設定された
-socket.on('newHost', (newHostId) => {
-    if (newHostId === myPlayerId) {
-        alert('あなたが新しいホストになりました！');
-    }
-    console.log(`新しいホスト: ${newHostId}`);
 });
 
 // ゲーム開始
@@ -1092,6 +1080,8 @@ document.getElementById("modify-btn").addEventListener("click", () => {
 // 物理入力・IME無効化
 answerEl.addEventListener("keydown", e => e.preventDefault());
 answerEl.addEventListener("beforeinput", e => e.preventDefault());
+
+}); // DOMContentLoadedの終わり
 </script>
 </body>
 </html>
