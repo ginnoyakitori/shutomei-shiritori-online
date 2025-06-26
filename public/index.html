@@ -314,7 +314,8 @@
             </tr>
         </thead>
         <tbody>
-            </tbody>
+            <!-- 部屋の行はJavaScriptで動的に生成されます -->
+        </tbody>
     </table>
     
     <div id="create-room-modal" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px; background-color: #fff;">
@@ -501,59 +502,76 @@ roomListTableBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('room-button')) {
         const roomId = e.target.dataset.roomId;
         const roomName = e.target.dataset.roomName; // 部屋名も取得
-        console.log(`ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: ${e.target.classList.contains('create') ? 'Create' : 'Join'}`); // ロギング追加
+        console.log(`テーブルの部屋ボタンクリック: Room ID: ${roomId}, Room Name: ${roomName}, Type: ${e.target.classList.contains('create') ? 'Create' : 'Join'}`); // ロギング追加
 
         if (e.target.classList.contains('create')) {
+            // 作成モーダル表示
             createRoomModal.style.display = 'block';
-            createRoomNameInput.value = '';
-            createRoomPasswordInput.value = '';
+            createRoomNameInput.value = ''; // 入力欄をクリア
+            createRoomPasswordInput.value = ''; // 入力欄をクリア
+            // ニックネームは以前入力したものを保持するか、空にするか選択 (今回はクリアしない)
+            // createNicknameInput.value = ''; 
+            console.log("部屋作成モーダルを開きました。"); // ロギング追加
         } else if (e.target.classList.contains('join')) {
+            // 参加モーダル表示
             joinRoomModal.style.display = 'block';
             joinRoomModalTitle.textContent = `部屋「${roomName}」に参加`;
             joiningRoomIdInput.value = roomId;
-            joinRoomPasswordInput.value = '';
-            if (e.target.dataset.hasPassword === "true") {
+            joinRoomPasswordInput.value = ''; // パスワード入力欄をリセット
+            // ニックネームは以前入力したものを保持するか、空にするか選択 (今回はクリアしない)
+            // joinNicknameInput.value = ''; 
+            if (e.target.dataset.hasPassword === "true") { // 文字列でくるので"true"と比較
                 joinRoomPasswordInput.style.display = 'block';
             } else {
                 joinRoomPasswordInput.style.display = 'none';
             }
+            console.log(`部屋参加モーダルを開きました: Room ID: ${roomId}, Room Name: ${roomName}`); // ロギング追加
         }
     }
 });
 
-// 部屋作成モーダル
+// 部屋作成モーダル内の「作成」ボタン
 confirmCreateRoomBtn.addEventListener('click', () => {
+    console.log("モーダル内の「作成」ボタンがクリックされました。"); // NEW LOG: モーダル内ボタンのクリックを検知
     const roomName = createRoomNameInput.value.trim();
     const nickname = createNicknameInput.value.trim();
     const password = createRoomPasswordInput.value;
     if (!roomName || !nickname) {
         alert('部屋名とニックネームは必須です。');
+        console.warn("部屋名またはニックネームが入力されていません。alertが表示されました。"); // ロギング追加
         return;
     }
+    console.log(`部屋作成リクエストをSocket.IOで送信中... 部屋名: ${roomName}, ニックネーム: ${nickname}`); // ロギング追加
     socket.emit('createRoom', { roomName, password, nickname });
-    console.log(`部屋作成リクエスト送信: 部屋名: ${roomName}, ニックネーム: ${nickname}`); // ロギング追加
+    // モーダルはサーバーからのroomCreatedイベントで閉じる
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => {
     createRoomModal.style.display = 'none';
+    console.log("部屋作成モーダルを閉じました。"); // ロギング追加
 });
 
-// 部屋参加モーダル
+// 部屋参加モーダル内の「入室」ボタン
 confirmJoinRoomBtn.addEventListener('click', () => {
+    console.log("モーダル内の「入室」ボタンがクリックされました。"); // NEW LOG: モーダル内ボタンのクリックを検知
     const roomId = joiningRoomIdInput.value;
     const nickname = joinNicknameInput.value.trim();
     const password = joinRoomPasswordInput.value;
     if (!nickname) {
         alert('ニックネームは必須です。');
+        console.warn("ニックネームが入力されていません。alertが表示されました。"); // ロギング追加
         return;
     }
+    console.log(`部屋参加リクエストをSocket.IOで送信中... 部屋ID: ${roomId}, ニックネーム: ${nickname}`); // ロギング追加
     socket.emit('joinRoom', { roomId, password, nickname });
-    console.log(`部屋参加リクエスト送信: 部屋ID: ${roomId}, ニックネーム: ${nickname}`); // ロギング追加
+    // モーダルはサーバーからのroomJoinedイベントで閉じる
 });
 
 cancelJoinRoomBtn.addEventListener('click', () => {
     joinRoomModal.style.display = 'none';
+    console.log("部屋参加モーダルを閉じました。"); // ロギング追加
 });
+
 
 // 準備完了ボタン
 readyBtn.addEventListener('click', () => {
@@ -562,14 +580,14 @@ readyBtn.addEventListener('click', () => {
     if (!myPlayerLi) return;
     const isReady = myPlayerLi.dataset.ready === 'false' || !myPlayerLi.dataset.ready;
     socket.emit('setReady', { roomId: currentRoomId, isReady: isReady });
-    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${isReady}`); // ロギング追加
+    console.log(`準備状態変更リクエスト送信: Room ID: ${currentRoomId}, 状態: ${isReady}`);
 });
 
 // 部屋を出るボタン
 leaveRoomBtn.addEventListener('click', () => {
     if (currentRoomId) {
         socket.emit('leaveRoom', currentRoomId);
-        console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`); // ロギング追加
+        console.log(`部屋退出リクエスト送信: Room ID: ${currentRoomId}`);
     }
     // 接続を切断し、再接続することで新しいソケットIDを取得し、ロビーに戻る
     socket.disconnect();
@@ -583,7 +601,7 @@ quizTypeBtns.forEach(button => {
         if (!isHost) return;
         const type = button.dataset.type;
         socket.emit('selectQuizType', { roomId: currentRoomId, type: type });
-        console.log(`クイズタイプ選択リクエスト送信: Room ID: ${currentRoomId}, タイプ: ${type}`); // ロギング追加
+        console.log(`クイズタイプ選択リクエスト送信: Room ID: ${currentRoomId}, タイプ: ${type}`);
     });
 });
 
@@ -591,7 +609,7 @@ quizTypeBtns.forEach(button => {
 startGameBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return;
     socket.emit('startGame', currentRoomId);
-    console.log(`ゲーム開始リクエスト送信: Room ID: ${currentRoomId}`); // ロギング追加
+    console.log(`ゲーム開始リクエスト送信: Room ID: ${currentRoomId}`);
 });
 
 // 解答送信ボタン
@@ -600,7 +618,7 @@ submitBtn.addEventListener('click', () => {
     const answer = answerEl.value.trim();
     if (answer) {
         socket.emit('submitAnswer', currentRoomId, answer);
-        console.log(`解答送信リクエスト: Room ID: ${currentRoomId}, 解答: ${answer}`); // ロギング追加
+        console.log(`解答送信リクエスト: Room ID: ${currentRoomId}, 解答: ${answer}`);
     }
 });
 
@@ -608,31 +626,30 @@ submitBtn.addEventListener('click', () => {
 returnToLobbyBtn.addEventListener('click', () => {
     if (!currentRoomId || !isHost) return;
     socket.emit('returnToLobby', currentRoomId);
-    console.log(`ロビーに戻るリクエスト送信 (ホスト): Room ID: ${currentRoomId}`); // ロギング追加
+    console.log(`ロビーに戻るリクエスト送信 (ホスト): Room ID: ${currentRoomId}`);
 });
 
 // ===== Socket.IO イベントハンドラ =====
 
 // 部屋リストの更新
 socket.on('roomList', (rooms) => {
-    console.log("--- roomList イベントを受信しました ---"); // ロギング追加
-    console.log("受信した部屋データ:", rooms); // ロギング追加
+    console.log("--- roomList イベントを受信しました ---");
+    console.log("受信した部屋データ:", rooms);
     roomListTableBody.innerHTML = ''; // テーブルの中身をクリア
     if (!rooms || rooms.length === 0) {
         console.log("部屋データが空または無効です。");
-        return; // データがなければここで終了
+        return;
     }
 
     rooms.forEach(room => {
         const row = roomListTableBody.insertRow();
         let buttonHtml = '';
-        let statusText = '';
         let playersText = '';
         let passwordText = '';
         let roomNameText = room.name || '空き部屋'; // 部屋名がない場合は'空き部屋'
 
         if (room.status === 'empty') { // 空き部屋
-            buttonHtml = `<button class="room-button create" data-room-id="${room.id}" data-room-name="${roomNameText}">作成</button>`;
+            buttonHtml = `<button class="room-button create" data-room-id="" data-room-name="${roomNameText}">作成</button>`;
             playersText = '-';
             passwordText = '-';
         } else { // 既存の部屋
@@ -648,7 +665,7 @@ socket.on('roomList', (rooms) => {
             <td>${passwordText}</td>
             <td>${buttonHtml}</td>
         `;
-        console.log(`部屋の行を追加: ID: ${room.id}, 名前: ${roomNameText}, ステータス: ${room.status}`); // ロギング追加
+        console.log(`部屋の行を追加: ID: ${room.id}, 名前: ${roomNameText}, ステータス: ${room.status}`);
     });
 });
 
@@ -657,42 +674,45 @@ socket.on('roomCreated', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
     isHost = true;
-    createRoomModal.style.display = 'none';
+    createRoomModal.style.display = 'none'; // モーダルを閉じる
     showRoomWaiting();
-    console.log(`部屋作成成功: Room ID: ${roomId}`); // ロギング追加
+    console.log(`部屋作成成功: Room ID: ${roomId}`);
 });
 
 // 部屋参加成功
 socket.on('roomJoined', (roomId) => {
     currentRoomId = roomId;
     myPlayerId = socket.id;
-    joinRoomModal.style.display = 'none';
+    joinRoomModal.style.display = 'none'; // モーダルを閉じる
     showRoomWaiting();
-    console.log(`部屋参加成功: Room ID: ${roomId}`); // ロギング追加
+    console.log(`部屋参加成功: Room ID: ${roomId}`);
 });
 
 // 部屋のエラー
 socket.on('roomError', (message) => {
     alert(message);
     showLobby(); 
-    console.error(`部屋エラー: ${message}`); // ロギング追加
+    console.error(`部屋エラー: ${message}`);
 });
 
 // 部屋の状態更新
 socket.on('roomState', (room) => {
-    console.log("--- roomState イベントを受信しました ---"); // ロギング追加
-    console.log("受信した部屋の状態:", room); // ロギング追加
+    console.log("--- roomState イベントを受信しました ---");
+    console.log("受信した部屋の状態:", room);
 
-    if (!currentRoomId || room.id !== currentRoomId) {
-        if (lobbyBox.style.display === "block" && room.players.some(p => p.id === socket.id)) { // some()を使って自分のプレイヤーIDがあるか確認
-            currentRoomId = room.id;
-            myPlayerId = socket.id;
-            showRoomWaiting();
-        } else {
-            console.log("現在の部屋と一致しないroomStateイベントを無視しました。"); // ロギング追加
-            return;
-        }
+    // 自分のプレイヤーIDがまだ設定されていなくて、かつroom.playersに自分がいる場合に画面を切り替える
+    // もしくは、現在の部屋IDと受信した部屋IDが一致しないが、自分がその部屋にいる場合も考慮
+    if (!currentRoomId || (room.id !== currentRoomId && room.players.some(p => p.id === socket.id))) {
+        currentRoomId = room.id;
+        myPlayerId = socket.id;
+        showRoomWaiting();
+        console.log(`部屋の状態更新により画面切り替え: Room ID: ${room.id}`);
+    } else if (currentRoomId && room.id !== currentRoomId) {
+        // 現在の部屋と一致しないroomStateイベントを無視 (自分がその部屋にいない場合)
+        console.log("現在の部屋と一致しないroomStateイベントを無視しました (自分はこの部屋にいません)。");
+        return;
     }
+
 
     currentRoomNameEl.textContent = room.name;
     currentRoomIdEl.textContent = room.id;
@@ -727,7 +747,10 @@ socket.on('roomState', (room) => {
         } else {
             selectedQuizTypeDisplay.textContent = 'クイズタイプを選択してください';
         }
-        startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && room.players.length >= 1 && room.players.every(p => p.ready)); // 全員準備OKも条件に追加
+
+        // ゲーム開始ボタンの有効/無効
+        // ゲームが待機中で、かつクイズタイプが選択されていれば有効
+        startGameBtn.disabled = !(room.status === 'waiting' && room.quizType && room.players.length >= 1 && room.players.every(p => p.ready));
         returnToLobbyBtn.style.display = (room.status === 'finished') ? 'block' : 'none';
     } else {
         hostControls.style.display = 'none';
@@ -771,7 +794,7 @@ socket.on('newHost', (newHostId) => {
     if (newHostId === myPlayerId) {
         alert('あなたが新しいホストになりました！');
     }
-    console.log(`新しいホスト: ${newHostId}`); // ロギング追加
+    console.log(`新しいホスト: ${newHostId}`);
 });
 
 // ゲーム開始
@@ -781,7 +804,7 @@ socket.on('gameStarted', () => {
     feedbackEl.textContent = '';
     answerEl.value = '';
     timerEl.textContent = '0.00';
-    console.log("ゲームが開始されました。"); // ロギング追加
+    console.log("ゲームが開始されました。");
 });
 
 // 新しい問題が出題
@@ -794,7 +817,7 @@ socket.on('newQuestion', (data) => {
     answerEl.readOnly = false;
     gameStartTime = Date.now();
     startTimer();
-    console.log(`新しい問題が出題: ${data.text} (問題 ${data.questionNumber})`); // ロギング追加
+    console.log(`新しい問題が出題: ${data.text} (問題 ${data.questionNumber})`);
 });
 
 let timerIntervalId;
@@ -809,7 +832,7 @@ function startTimer() {
 function stopTimer() {
     clearInterval(timerIntervalId);
     timerIntervalId = null;
-    console.log("タイマー停止。"); // ロギング追加
+    console.log("タイマー停止。");
 }
 
 // 正解者通知
@@ -818,7 +841,7 @@ socket.on('correctAnswer', (data) => {
     feedbackEl.textContent = '正解！';
     answerEl.readOnly = true;
     submitBtn.disabled = true;
-    console.log(`正解者が出ました: ${data.playerId}, スコア: ${data.score}`); // ロギング追加
+    console.log(`正解者が出ました: ${data.playerId}, スコア: ${data.score}`);
 });
 
 // ゲーム終了（正解発表と結果表示の準備）
@@ -836,12 +859,12 @@ socket.on('gameOver', (data) => {
         correctAnswererInfoEl.style.fontWeight = 'normal';
     }
     correctAnswerDisplayEl.textContent = `正解は「${data.correctAnswer}」でした。`;
-    console.log("ゲーム終了イベント受信。"); // ロギング追加
+    console.log("ゲーム終了イベント受信。");
 });
 
 socket.on('feedback', (message) => {
     feedbackEl.textContent = message;
-    console.log(`フィードバック: ${message}`); // ロギング追加
+    console.log(`フィードバック: ${message}`);
 });
 
 
