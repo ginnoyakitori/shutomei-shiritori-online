@@ -154,7 +154,7 @@ function sendQuestion(roomId) {
         questionNumber: room.questionCount
     });
     console.log(`部屋 ${roomId} に問題 ${room.questionCount} を出題: ${room.currentQuestion.q}`);
-
+    
     // 問題出題時刻を記録
     room.questionStartTime = Date.now();
 }
@@ -165,7 +165,7 @@ function endGame(roomId) {
     if (!room) return;
 
     room.status = 'finished';
-
+    
     // 全員にゲーム終了を通知し、結果（正解者とタイム）を送信
     io.to(roomId).emit('gameOver', {
         correctAnswererId: room.correctAnswerer,
@@ -179,7 +179,7 @@ function endGame(roomId) {
         clearTimeout(room.timerId);
         room.timerId = null;
     }
-
+    
     console.log(`部屋 ${roomId} のゲームが終了しました。`);
     // 部屋リスト更新
     emitRoomList();
@@ -365,12 +365,12 @@ io.on('connection', (socket) => {
             socket.emit('roomError', 'クイズタイプを選択してください。');
             return;
         }
-
+        
         room.status = 'playing';
         room.questionCount = 0;
         room.correctAnswerer = null;
         room.correctAnswererTime = null;
-
+        
         // 全プレイヤーのスコアと準備状態をリセット
         Object.values(room.players).forEach(player => {
             player.score = 0;
@@ -397,7 +397,7 @@ io.on('connection', (socket) => {
         if (isCorrect) {
             room.correctAnswerer = socket.id; // 最初に正解したプレイヤーを記録
             room.players[socket.id].score++; // スコア加算
-
+            
             // タイムを計算
             room.correctAnswererTime = (Date.now() - room.questionStartTime) / 1000; // 秒単位でタイムを記録
 
@@ -407,7 +407,7 @@ io.on('connection', (socket) => {
                 correctAnswererTime: room.correctAnswererTime,
                 correctAnswer: room.currentQuestion.a // 正解
             });
-
+            
             // ゲームを終了
             endGame(roomId);
 
@@ -448,8 +448,6 @@ io.on('connection', (socket) => {
                     if (newHostId) {
                         room.hostId = newHostId;
                         room.players[newHostId].isHost = true;
-                        io.to(roomId).emit('newHost', newHostId); // 新しいホストを通知
-                        console.log(`部屋 ${roomId} の新しいホストは ${room.players[newHostId].name} (${newHostId}) です。`);
                     }
                 }
                 // 部屋リストと部屋の状態を更新
