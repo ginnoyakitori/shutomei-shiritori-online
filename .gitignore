@@ -1,5 +1,4 @@
-./.gitignore
-
-# Git 管理から除外するファイルやフォルダ
-node_modules/  # npmパッケージがインストールされるフォルダ
-.env           # 環境変数ファイルなど、機密情報が含まれる可能性のあるファイル
+node_modules/
+.env
+npm-debug.log
+*.log
