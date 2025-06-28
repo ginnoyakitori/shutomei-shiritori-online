@@ -1,336 +1,722 @@
-/* public/style.css */
+html, body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    text-align: center;
+}
 
 body {
-    font-family: 'Arial', sans-serif;
+    padding: 20px; /* 全体的なパディング */
+    background-color: #f4f7f6; /* 背景色 */
+    color: #333; /* デフォルト文字色 */
     display: flex;
-    justify-content: center;
-    align-items: flex-start; /* 上部に寄せる */
+    flex-direction: column;
+    align-items: center;
     min-height: 100vh;
-    background-color: #f0f2f5;
-    margin: 0;
-    padding: 20px;
-    box-sizing: border-box;
 }
 
-.section {
+/* input, button, select の基本スタイルをリセット */
+input, select { /* buttonは.buttonクラスで定義済みのため除外 */
+    font-size: 1rem;
+    margin: 5px;
+    padding: 0px;
+    box-sizing: border-box; /* パディングとボーダーを幅に含める */
+}
+
+.container {
     background-color: #ffffff;
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     max-width: 600px;
-    text-align: center;
-    margin-bottom: 20px; /* セクション間の余白 */
-}
-
-h1, h2, h3 {
-    color: #333;
+    width: 100%;
     margin-bottom: 20px;
 }
 
-.input-group {
-    display: flex;
-    flex-wrap: wrap; /* 小さい画面で折り返す */
-    gap: 10px;
+h1#main-title {
+    color: #007bff;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+    text-align: center;
+}
+
+h2.section-title {
+    color: #007bff;
+    margin-top: 25px;
     margin-bottom: 15px;
-    justify-content: center;
+    font-size: 1.6em;
 }
 
-.input-group input[type="text"],
-.input-group input[type="password"] {
-    flex-grow: 1;
-    padding: 10px 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1em;
-    min-width: 150px; /* 最小幅を設定 */
+.section-description {
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 15px;
 }
 
-button {
-    padding: 10px 20px;
+/* ボタンの基本スタイル */
+.button {
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 5px;
+    padding: 12px 25px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
-    transition: background-color 0.2s ease;
-    white-space: nowrap; /* ボタン内のテキストを折り返さない */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    margin: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-button:hover {
+.button:hover {
     background-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-button:disabled {
+.button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
-#rooms-container {
-    margin-top: 20px;
-    border: 1px solid #eee;
-    padding: 15px;
-    border-radius: 5px;
-    min-height: 150px;
-    background-color: #f9f9f9;
-    text-align: left;
+.primary-button {
+    background-color: #28a745;
+}
+.primary-button:hover {
+    background-color: #218838;
 }
 
-.room-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.room-item:last-child {
-    border-bottom: none;
-}
-
-.room-item p {
-    margin: 0;
-    color: #555;
-}
-
-.room-item button {
-    padding: 5px 10px;
-    font-size: 0.9em;
-}
-
-.empty-room {
-    color: #999;
-    font-style: italic;
-}
-
-/* ゲームルームセクション */
-#game-room-section {
-    text-align: left;
-}
-
-#roomNameDisplay, #hostDisplay, #quizTypeDisplay {
-    margin-bottom: 10px;
-    font-size: 1.1em;
-    color: #333;
-}
-
-#playersList {
-    border: 1px solid #eee;
-    padding: 15px;
-    border-radius: 5px;
-    min-height: 100px;
-    background-color: #f9f9f9;
-    margin-bottom: 20px;
-}
-
-.player-item {
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee;
-    color: #444;
-}
-
-.player-item:last-child {
-    border-bottom: none;
-}
-
-.controls-group {
-    margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-
-#quiz-type-selection {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-#quiz-type-selection p {
-    margin: 0;
-    font-weight: bold;
-    color: #555;
-}
-
-/* ゲームセクション */
-#game-section {
-    margin-top: 20px;
-    text-align: center;
-}
-
-#questionText {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 15px;
-}
-
-#timerDisplay {
-    font-size: 1.2em;
-    color: #007bff;
-    margin-bottom: 15px;
-}
-
-#answerInput {
-    width: calc(100% - 30px);
-    padding: 12px 15px;
-    border: 2px solid #007bff;
-    border-radius: 5px;
-    font-size: 1.2em;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-#feedbackMessage {
-    color: #dc3545;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-#returnToLobbyBtn {
-    margin-top: 20px;
+.secondary-button {
     background-color: #6c757d;
 }
-
-#returnToLobbyBtn:hover {
+.secondary-button:hover {
     background-color: #5a6268;
 }
 
-/* フリックキーボードのスタイル */
-#flick-keyboard {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4列 */
-    gap: 5px;
-    margin-top: 20px;
-    width: 100%;
-    max-width: 400px; /* キーボードの最大幅 */
-    margin-left: auto;
-    margin-right: auto;
+.alert-button {
+    background-color: #dc3545;
+}
+.alert-button:hover {
+    background-color: #c82333;
 }
 
-.key-row {
-    display: contents; /* gridの列に直接配置 */
-}
-
-.flick-key {
-    position: relative;
-    width: 100%;
-    padding: 15px 0;
-    font-size: 1.5em;
-    background-color: #e9ecef;
-    color: #333;
+/* 入力フィールド */
+.input-field {
+    width: calc(100% - 20px);
+    padding: 12px;
+    margin: 8px 0;
     border: 1px solid #ced4da;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1.1em;
+}
+.input-field::placeholder {
+    color: #a0a0a0;
+}
+
+/* 部屋選択画面 */
+#room-selection-screen .room-actions {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+#room-selection-screen .create-room-section,
+#room-selection-screen .join-room-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#room-selection-screen .create-room-section .input-field,
+#room-selection-screen .join-room-section .input-field {
+    flex-grow: 1;
+    min-width: 180px;
+}
+
+#room-selection-screen .create-room-section button,
+#room-selection-screen .join-room-section button {
+    flex-shrink: 0;
+}
+
+/* 部屋リストのスタイル */
+.room-list-container {
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.room-item {
+    background-color: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    text-align: left;
     cursor: pointer;
-    user-select: none; /* テキスト選択を防止 */
-    transition: background-color 0.1s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.room-item:hover {
+    background-color: #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.room-item.full {
+    background-color: #f8d7da;
+    color: #721c24;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.room-item.playing {
+    background-color: #fff3cd;
+    color: #856404;
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+/* ロビー画面 */
+#room-lobby h2, #room-lobby p {
+    margin-bottom: 15px;
+}
+
+.players-list {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    margin-bottom: 25px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.players-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.players-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #e9ecef;
+}
+
+.players-list li:last-child {
+    border-bottom: none;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-status {
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+}
+
+.player-status.host {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.player-status.ready {
+    background-color: #28a745;
+}
+
+.player-score {
+    font-weight: bold;
+    color: #007bff;
+}
+
+#host-controls {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.quiz-type-selection {
     display: flex;
     justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.quiz-select-button {
+    background-color: #17a2b8;
+}
+.quiz-select-button:hover {
+    background-color: #138496;
+}
+.quiz-select-button.selected {
+    background-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+
+#selected-quiz-display {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.lobby-actions {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+#set-ready-btn.ready {
+    background-color: #28a745;
+}
+
+/* クイズ画面 */
+.quiz-container {
+    padding: 20px;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+#question {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0em;
+    min-height: 60px;
+    display: flex;
     align-items: center;
-    height: 60px; /* キーの高さ固定 */
+    justify-content: center;
+}
+
+#answer {
+    font-size: 1.6em;
+    width: 90%;
+    padding: 0px;
+    margin-bottom: 5px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background: #f9f9f9;
+    display: block;
+    margin: 0 auto;
+    color: black; /* 解答の文字色を黒に指定 */
+    text-align: center;
+}
+
+#feedback {
+    font-size: 1.2em;
+    color: #dc3545;
+    margin-top: 15px;
+    min-height: 1.5em;
+}
+#feedback:empty {
+    min-height: 0;
+    margin-top: 0;
+}
+#feedback:contains("正解") {
+    color: #28a745;
+}
+
+#question-number {
+    font-weight: bold;
+    margin-bottom: 0em;
+    font-size: 1.2em;
+    color: #333;
+    text-align: right;
+}
+
+#top-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 400px;
+    margin: 0 auto 0px auto;
+}
+
+#timer {
+    font-weight: bold;
+    margin-bottom: 0em;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+
+/* フリックキーボード */
+#flick-keyboard {
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    margin-top: 20px;
+    width: calc(100% - 20px);
     box-sizing: border-box;
+    display: flex; /* gridではなくflexでラップして中央寄せ */
+    flex-direction: column;
+    align-items: center;
 }
 
-.flick-key:hover {
-    background-color: #dee2e6;
+#flick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 70px);
+    grid-template-rows: repeat(4, 65px);
+    gap: 15px;
+    justify-content: center;
+    margin: 0 auto;
+    transform: translate(-2px, -4px);
 }
 
-.flick-key:active {
-    background-color: #adb5bd;
-}
-
-/* フリックガイド */
-.flick-key.flicking::before,
-.flick-key.flicking::after,
-.flick-key.flicking .flick-char-top,
-.flick-key.flicking .flick-char-bottom,
-.flick-key.flicking .flick-char-left,
-.flick-key.flicking .flick-char-right {
-    content: attr(data-flick-char); /* 各フリック方向の文字はJSで設定 */
-    position: absolute;
-    font-size: 0.8em;
-    color: #6c757d;
-    pointer-events: none; /* マウスイベントを透過 */
-    opacity: 0;
-    transition: opacity 0.1s ease-in-out;
-}
-
-/* フリックガイドの表示位置 */
-.flick-key.flicking::before { /* 上 */
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    content: attr(data-flick-top);
-}
-.flick-key.flicking::after { /* 下 */
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    content: attr(data-flick-bottom);
-}
-.flick-key.flicking .flick-char-left { /* 左 */
-    left: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    content: attr(data-flick-left);
-}
-.flick-key.flicking .flick-char-right { /* 右 */
-    right: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    content: attr(data-flick-right);
-}
-
-/* フリック中の文字表示 */
-.flick-key.flicking {
-    z-index: 10; /* 最前面に表示 */
-}
-
-/* フリックキーの文字を中央に配置 */
-.flick-key > span {
+.flick-btn {
     position: relative;
+    width: 70px;
+    max-width: 70px;
+    height:70px;
+    max-height: 70px;
+    background: #eef;
+    font-size: 2em;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    touch-action: none; /* スクロール防止 */
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: background-color 0.1s ease;
+}
+.flick-btn:active {
+    background-color: #d0d0f0;
+}
+
+.flick-btn .center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #000;
     z-index: 1;
 }
 
-/* フリックキーボードの特殊キーの調整 */
-.flick-key[data-main="濁"] {
-    font-size: 1.2em; /* 濁の文字サイズ調整 */
+.flick-btn .hint {
+    position: absolute;
+    font-size: 0.6em;
+    opacity: 0.6;
+    pointer-events: none;
+    color: #000;
+    z-index: 0;
 }
-.flick-key[data-main="消"], .flick-key[data-main="空白"] {
-    grid-column: span 2; /* 2列結合 */
+
+/* hint位置（ボタン内ギリギリに調整） */
+.flick-btn .hint.top    { top: -3px; left: 50%; transform: translateX(-50%); }
+.flick-btn .hint.right  { right: -3px; top: 50%; transform: translateY(-50%); }
+.flick-btn .hint.bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+.flick-btn .hint.left   { left: -3px; top: 50%; transform: translateY(-50%); }
+
+#control-row {
+    display: flex;
+    justify-content: space-between; /* 濁/小を左、消を右、わ行を中央に配置 */
+    gap: 5px;
+    margin-top: -2px;
+    touch-action: none;
+    transform: translate(0, -65px); /* 上に移動 */
+    width: calc(3 * 70px + 2 * 5px); /* 3つのボタンと2つのgapの合計幅 */
+    max-width: calc(3 * 70px + 2 * 5px);
+    margin-left: auto; /* 中央寄せ */
+    margin-right: auto; /* 中央寄せ */
+}
+
+#modify-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 1.7em;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background: #eef;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    touch-action: none;
+    transition: background-color 0.1s ease;
+    color: black; /* 文字色を黒に指定 */
+    order: 1; /* 一番左に配置 */
+}
+
+#clear-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 2.5em;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background: #eef;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    touch-action: none;
+    transition: background-color 0.1s ease;
+    color: black; /* 文字色を黒に指定 */
+    order: 3; /* 一番右に配置 */
+}
+
+/* ワ行のフリックボタン（base === "わ" のボタン）のスタイル */
+.flick-btn[data-base="わ"] {
+    order: 2; /* control-rowの中で真ん中に来るように設定 */
+}
+
+#modify-btn:active, #clear-btn:active {
+    background-color: #e0e0e0;
+}
+
+#submit-btn {
+    width: 60vw;
+    max-width: 300px;
+    height: 17vw;
+    max-height: 80px;
+    font-size: 1.6em;
+    font-weight: bold;
+    border-radius: 10px;
+    background: #cce;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    margin-top:-7px;
+    margin-left: auto;
+    margin-right: auto;
+    transform: translateY(-52px);
+    display: block;
+    transition: background-color 0.1s ease;
+}
+#submit-btn:active {
+    background-color: #aaccdd;
 }
 
 
-/* レスポンシブデザインの調整 */
-@media (max-width: 768px) {
-    .section {
+/* 結果画面 */
+.result-container h2 {
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+#final-result-message {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#your-score {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 25px;
+}
+
+.final-scores-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.final-scores-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-bottom: 1px dashed #e9ecef;
+}
+.final-scores-list li:last-child {
+    border-bottom: none;
+}
+
+.player-final-score {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.player-final-time {
+    color: #555;
+    font-size: 0.9em;
+}
+
+/* 入力方法選択のスタイル */
+#input-method-selection {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+#input-method-selection label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+    padding: 15px 25px;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    background-color: #f0f8ff;
+    color: #333;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    min-width: 140px;
+    text-align: center;
+}
+#input-method-selection input[type="radio"] {
+    display: none;
+}
+#input-method-selection input[type="radio"]:checked + span {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+#input-method-selection label span {
+    display: inline-block;
+}
+#input-method-selection label:active {
+    background-color: #0056b3 !important;
+    color: white !important;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+}
+
+/* スタート画面のボタンを大きくする */
+#start-box button {
+    display: block;
+    width: 80%;
+    max-width: 300px;
+    padding: 15px 20px;
+    margin: 10px auto;
+    font-size: 1.5em;
+    border: none;
+    border-radius: 10px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    transition: background-color 0.1s ease;
+}
+#start-box button:active {
+    background-color: #45a049;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+/* スタートボタンを赤色に */
+#start-btn {
+    background-color: #dc3545 !important;
+}
+#start-btn:active {
+    background-color: #c82333 !important;
+}
+#start-btn:disabled {
+    background-color: #cccccc !important;
+    cursor: not-allowed;
+}
+
+/* ランキングを見るボタンを黄色に */
+#start-box button[onclick*='ranking.html'] {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+#start-box button[onclick*='ranking.html']:active {
+    background-color: #e0a800 !important;
+}
+
+/* ランキング表示切り替えボタン */
+#ranking-filter-buttons {
+    margin-top: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+#ranking-filter-buttons button {
+    padding: 8px 15px;
+    font-size: 1em;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    background-color: #e0f0ff;
+    color: #007bff;
+    cursor: pointer;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+#ranking-filter-buttons button.active {
+    background-color: #007bff;
+    color: white;
+}
+#ranking-filter-buttons button:hover:not(.active) {
+    background-color: #cce0ff;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 600px) {
+    .container {
         padding: 20px;
     }
-    .input-group {
+
+    h1#main-title {
+        font-size: 1.8em;
+    }
+
+    .flick-btn {
+        font-size: 1.5em;
+        width: 65px;
+        height: 65px;
+        max-width: 65px;
+        max-height: 65px;
+    }
+
+    .flick-btn .hint {
+        font-size: 0.4em;
+    }
+
+    .control-buttons .button {
+        width: 60px;
+        font-size: 1em;
+    }
+
+    #room-selection-screen .create-room-section,
+    #room-selection-screen .join-room-section {
         flex-direction: column;
         align-items: stretch;
     }
-    .input-group input, .input-group button {
+
+    #room-selection-screen .create-room-section .input-field,
+    #room-selection-screen .join-room-section .input-field {
         width: 100%;
         min-width: unset;
     }
-    .room-item {
-        flex-direction: column;
-        align-items: flex-start;
+
+    /* レスポンシブ対応でのフリックグリッドとコントロール行の調整 */
+    #flick-grid {
+        grid-template-columns: repeat(3, 65px);
+        grid-template-rows: repeat(4, 60px);
+        gap: 10px;
+        transform: translate(-2px, -4px);
     }
-    .room-item button {
-        margin-top: 10px;
-        width: 100%;
+
+    #control-row {
+        gap: 5px;
+        margin-top: -2px;
+        transform: translate(0, -65px);
+        width: calc(3 * 65px + 2 * 5px); /* スマホサイズに合わせて幅を調整 */
+        max-width: calc(3 * 65px + 2 * 5px);
+        margin-left: auto;
+        margin-right: auto;
     }
-    #flick-keyboard {
-        grid-template-columns: repeat(3, 1fr); /* 3列に減らす */
-        max-width: 300px;
-    }
-    .flick-key[data-main="消"], .flick-key[data-main="空白"] {
-        grid-column: span 1; /* 1列に戻す */
+    #modify-btn, #clear-btn {
+        width: 65px;
+        height: 65px;
     }
 }

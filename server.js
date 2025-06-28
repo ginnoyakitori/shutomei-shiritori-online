@@ -1,459 +1,357 @@
-// server.js
-
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
-// const { v4: uuidv4 } = require('uuid'); // uuidv4は不要になるためコメントアウトまたは削除
-const fs = require('fs'); // fsモジュールを追加
+const { Server } = require('socket.io');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-// CORS設定: どこからの接続も許可 (開発用。本番では特定のオリジンに制限することを推奨)
-const io = socketIo(server, {
-    cors: {
-        origin: "*", // すべてのオリジンからの接続を許可
-        methods: ["GET", "POST"]
-    }
-});
+const io = new Server(server);
 
-const PORT = process.env.PORT || 3000; // RenderがPORT環境変数を提供
+const PORT = process.env.PORT || 3000;
 
-// publicディレクトリを静的ファイルとして提供
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ゲームの状態を保持するオブジェクト
-const rooms = {};
-const MAX_ROOMS_DISPLAY = 10; // 常に表示する部屋数 (実際の最大部屋数ではない)
+// クイズデータをロードする関数
+const quizData = {}; // クイズデータを保持するオブジェクト
 
-// クイズデータ
-let kokumeiQuizData = [];
-let shutomeiQuizData = [];
-
-// CSVファイルからクイズデータを読み込む関数
-function loadQuizData() {
+async function loadQuiz(filename) {
+    const filePath = path.join(__dirname, filename);
     try {
-        // kokumei.csv
-        const kokumeiContent = fs.readFileSync('kokumei.csv', 'utf8');
-        kokumeiQuizData = kokumeiContent.split('\n')
-            .map(line => {
-                const parts = line.trim().split(',');
-                if (parts.length === 2) {
-                    return { question: parts[0].trim(), answer: parts[1].trim() };
-                }
-                return null;
-            })
-            .filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
-        console.log(`kokumei.csv loaded: ${kokumeiQuizData.length} questions`);
-
-        // shutomei.csv
-        const shutomeiContent = fs.readFileSync('shutomei.csv', 'utf8');
-        shutomeiQuizData = shutomeiContent.split('\n')
-            .map(line => {
-                const parts = line.trim().split(',');
-                if (parts.length === 2) {
-                    return { question: parts[0].trim(), answer: parts[1].trim() };
-                }
-                return null;
-            })
-            .filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
-        console.log(`shutomei.csv loaded: ${shutomeiQuizData.length} questions`);
-
+        const csv = await fs.promises.readFile(filePath, 'utf8');
+        const lines = csv.trim().split('\n').slice(1); // ヘッダーをスキップ
+        return lines.map(line => {
+            const [q, a] = line.split(',');
+            return { q: q.trim(), a: a.trim() };
+        });
     } catch (error) {
-        console.error("Error loading quiz data:", error);
-        // ファイルが見つからないなどの場合、デフォルトのデータを設定するか、サーバーを停止するなど適切なエラーハンドリングを行う
-        // ここでは空のままにしておく
+        console.error(`Error loading quiz file ${filename}:`, error);
+        return [];
     }
 }
 
-// サーバー起動時にクイズデータを読み込む
-loadQuizData();
+// サーバー起動時にクイズデータをロード
+async function initializeQuizData() {
+    quizData['kokumei.csv'] = await loadQuiz('kokumei.csv');
+    quizData['shutomei.csv'] = await loadQuiz('shutomei.csv');
+    console.log(`kokumei.csv loaded: ${quizData['kokumei.csv'].length} questions`);
+    console.log(`shutomei.csv loaded: ${quizData['shutomei.csv'].length} questions`);
+}
 
-// 部屋の状態をクライアントに送信するヘルパー関数
-function emitRoomList() {
-    const roomList = Object.values(rooms)
-        .filter(room => room.isVisible) // isVisibleがtrueの部屋のみ表示
-        .map(room => ({
-            id: room.id,
-            name: room.name,
-            playersCount: Object.keys(room.players).length,
-            // maxPlayersは削除されるため、ここでは含めない
-            status: room.status,
-            hasPassword: room.password !== null, // パスワードの概念は今回のコードにはないので常にfalseになる
-            quizType: room.quizType
-        }));
+initializeQuizData();
 
-    // MAX_ROOMS_DISPLAYまで空の部屋情報も追加して常に10部屋表示 (このロジックは維持)
-    const paddedRoomList = [...roomList];
-    while (paddedRoomList.length < MAX_ROOMS_DISPLAY) {
-        paddedRoomList.push({ id: null, name: "空き部屋", playersCount: 0, status: "empty", hasPassword: false, quizType: null });
+// 部屋の状態を管理するオブジェクト
+const rooms = {};
+
+// ユーティリティ関数：配列をシャッフルする
+function shuffleArray(array) {
+    // Array.from() を使って新しい配列を作成し、元の配列が変更されないようにする
+    const newArray = Array.from(array); 
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
-
-    io.emit('roomList', paddedRoomList.slice(0, MAX_ROOMS_DISPLAY));
-    console.log("部屋リストを更新しました。");
+    return newArray;
 }
 
-// 特定の部屋の状態をその部屋の全員に送信
-function emitRoomState(roomId) {
-    const room = rooms[roomId];
-    if (!room) return;
-
-    // プレイヤーオブジェクトを配列に変換して送信
-    const playersArray = Object.values(room.players);
-
-    io.to(roomId).emit('roomState', {
-        id: room.id,
-        name: room.name,
-        players: playersArray, // 配列として送信
-        status: room.status,
-        hostId: room.hostId,
-        quizType: room.quizType,
-        currentQuestion: room.currentQuestion ? { text: room.currentQuestion.text, questionNumber: room.currentQuestion.questionNumber } : null,
-        correctAnswerer: room.correctAnswerer,
-        correctAnswererTime: room.correctAnswererTime
-    });
-    console.log(`部屋 ${roomId} の状態を更新しました。`);
-}
-
-// 新しい問題を出題する関数
-function sendNextQuestion(roomId) {
-    const room = rooms[roomId];
-    if (room && room.status === 'playing') {
-        if (room.currentQuestionIndex < room.questions.length) {
-            const questionData = room.questions[room.currentQuestionIndex];
-            room.currentQuestion = {
-                text: questionData.question,
-                answer: questionData.answer,
-                questionNumber: room.currentQuestionIndex + 1
-            };
-            room.correctAnswerer = null; // 正解者をリセット
-            room.correctAnswererTime = null; // 正解タイムをリセット
-            room.questionStartTime = Date.now(); // 問題開始時刻を記録
-
-            io.to(roomId).emit('newQuestion', {
-                text: room.currentQuestion.text,
-                questionNumber: room.currentQuestion.questionNumber,
-                quizType: room.quizType // クイズタイプもここで送る
-            });
-            console.log(`部屋 ${roomId} に新しい問題を出題: ${room.currentQuestion.text}`);
-        } else {
-            // すべての問題が出題された場合、ゲーム終了
-            room.status = 'finished';
-            // 最終問題の正解者と答えを渡す
-            io.to(roomId).emit('gameOver', {
-                correctAnswererId: room.correctAnswerer,
-                correctAnswererName: room.correctAnswerer ? room.players[room.correctAnswerer].name : null,
-                correctAnswererTime: room.correctAnswererTime,
-                correctAnswer: room.currentQuestion ? room.currentQuestion.answer : 'N/A' // 最後の問題の答え
-            });
-            console.log(`部屋 ${roomId} のすべての問題が終了しました。`);
-            emitRoomList(); // 部屋リストを更新
-            emitRoomState(roomId); // 部屋の状態を更新
-        }
-    }
-}
-
-
-// Socket.IO接続ハンドラ
 io.on('connection', (socket) => {
-    console.log('ユーザーが接続しました:', socket.id);
+    console.log('A user connected:', socket.id);
 
-    // 接続時に部屋リストを送信
-    emitRoomList();
+    // 接続時に部屋リストをクライアントに送信
+    socket.emit('roomList', getPublicRoomList());
 
-    // 部屋を作成
+    socket.on('getRoomList', () => {
+        socket.emit('roomList', getPublicRoomList());
+    });
+
     socket.on('createRoom', ({ roomName, nickname }) => {
-        let roomId;
-        do {
-            roomId = Math.floor(1000 + Math.random() * 9000).toString(); // 1000から9999までの4桁の数字
-        } while (rooms[roomId]); // 既に存在するIDなら再生成
-
+        const roomId = generateRoomId(); // 新しいルームIDを生成
+        const player = { id: socket.id, nickname, isHost: true, isReady: true, score: 0, finalTime: null };
         rooms[roomId] = {
             id: roomId,
             name: roomName,
-            status: 'waiting',
             hostId: socket.id,
-            quizType: null, // 初期状態ではクイズタイプは未選択
-            isVisible: true, // デフォルトで部屋リストに表示
-            players: {
-                [socket.id]: { name: nickname, score: 0, ready: false, isHost: true }
-            },
-            questions: [], // クイズ問題の配列
+            hostName: nickname,
+            players: [player],
+            quizFile: null, // ホストが選択するまでnull
+            quizTitle: null,
+            quizSet: null,
+            questions: [], // ゲーム開始時に設定
             currentQuestionIndex: 0,
-            currentQuestion: null,
-            correctAnswerer: null,
-            correctAnswererTime: null,
-            questionStartTime: null
+            startTime: null,
+            isPlaying: false,
+            isVisible: true, // デフォルトで公開
+            maxPlayers: 4, // 最大プレイヤー数
+            playerTimes: {} // 各プレイヤーの現在の経過時間を保持
         };
         socket.join(roomId);
-        socket.emit('roomCreated', roomId);
-        emitRoomList(); // 部屋リストを更新
-        emitRoomState(roomId); // 部屋の状態を更新
-        console.log(`部屋 ${roomId} が ${nickname} (${socket.id}) によって作成されました。`);
+        socket.roomId = roomId; // ソケットに現在の部屋IDを紐付け
+        socket.emit('roomCreated', rooms[roomId]);
+        io.emit('roomList', getPublicRoomList()); // 全クライアントに部屋リストを更新
+        console.log(`Room created: ${roomId} by ${nickname}`);
     });
 
-    // 部屋に参加
     socket.on('joinRoom', ({ roomId, nickname }) => {
         const room = rooms[roomId];
         if (!room) {
             socket.emit('roomError', '指定された部屋は見つかりません。');
-            console.log(`参加失敗: 部屋 ${roomId} が見つかりません。`);
             return;
         }
-        if (room.status !== 'waiting' && room.status !== 'finished') { // finished状態でも再参加可能にする
-            socket.emit('roomError', 'この部屋は現在ゲーム中です。');
-            console.log(`参加失敗: 部屋 ${roomId} はゲーム中です。`);
-            return;
-        }
-        // if (Object.keys(room.players).length >= 4) { // 最大プレイヤー数のチェックは削除
+        
+        // if (room.players.length >= room.maxPlayers) {
         //     socket.emit('roomError', 'この部屋は満員です。');
-        //     console.log(`参加失敗: 部屋 ${roomId} は満員です。`);
         //     return;
         // }
+        // if (room.isPlaying) {
+        //     // ゲーム中の部屋でも参加を許可
+        //     console.log(`User ${nickname} joining game in progress in room ${roomId}`);
+        // }
 
-        // 既にどこかの部屋にいる場合は退出させる
-        for (const rId in rooms) {
-            if (rooms[rId].players[socket.id]) {
-                const playerToLeave = rooms[rId].players[socket.id];
-                socket.leave(rId);
-                delete rooms[rId].players[socket.id];
-                io.to(rId).emit('playerLeft', socket.id, playerToLeave.name); // 元の部屋に退出を通知
-                console.log(`${playerToLeave.name}(${socket.id}) が部屋 ${rId} から退出しました。`);
-
-                if (Object.keys(rooms[rId].players).length === 0) {
-                    delete rooms[rId];
-                    console.log(`部屋 ${rId} に誰もいなくなったため削除しました。`);
-                } else if (rooms[rId].hostId === socket.id) {
-                    const newHostId = Object.keys(rooms[rId].players)[0];
-                    if (newHostId) {
-                        rooms[rId].hostId = newHostId;
-                        rooms[rId].players[newHostId].isHost = true;
-                        io.to(rId).emit('newHost', newHostId);
-                        console.log(`部屋 ${rId} の新しいホストは ${rooms[rId].players[newHostId].name} (${newHostId}) です。`);
-                    }
-                }
-                emitRoomList();
-                if (rooms[rId]) {
-                    emitRoomState(rId);
-                }
-                break;
-            }
+        const existingPlayer = room.players.find(p => p.id === socket.id);
+        if (existingPlayer) {
+            socket.emit('roomError', 'すでにこの部屋に参加しています。');
+            return;
         }
 
-
-        room.players[socket.id] = { name: nickname, score: 0, ready: false, isHost: false };
+        const player = { id: socket.id, nickname, isHost: false, isReady: false, score: 0, finalTime: null };
+        room.players.push(player);
         socket.join(roomId);
-        socket.emit('roomJoined', roomId);
-        emitRoomList(); // 部屋リストを更新
-        emitRoomState(roomId); // 部屋の状態を更新
-        console.log(`${nickname} (${socket.id}) が部屋 ${roomId} に参加しました。`);
+        socket.roomId = roomId;
+
+        if (room.isPlaying) {
+            // ゲーム中に入室した場合、既存のプレイヤーの経過時間と同期
+            player.startTimeOffset = room.startTime ? Date.now() - room.startTime : 0;
+            console.log(`Player ${nickname} joined game in progress. Offset: ${player.startTimeOffset}ms`);
+        }
+
+        socket.emit('joinedRoom', room);
+        io.to(roomId).emit('roomStateUpdate', room); // 部屋の全メンバーに状態更新
+        io.emit('roomList', getPublicRoomList()); // 全クライアントに部屋リストを更新
+        console.log(`User ${nickname} joined room: ${roomId}`);
     });
 
-    // 部屋の表示/非表示を切り替え (クライアント側でこのボタンを削除したので、この機能は使われなくなるが、サーバー側は残しておく)
-    socket.on('toggleRoomVisibility', (roomId) => {
+    socket.on('getRoomState', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (room) {
+            socket.emit('roomStateUpdate', room);
+        }
+    });
+
+    socket.on('setReady', ({ roomId, isReady }) => {
+        const room = rooms[roomId];
+        if (room) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) {
+                player.isReady = isReady;
+                io.to(roomId).emit('roomStateUpdate', room);
+                console.log(`Player ${player.nickname} in room ${roomId} isReady: ${isReady}`);
+            }
+        }
+    });
+
+    socket.on('selectQuizType', ({ roomId, quizFile, quizTitle, quizSet }) => {
+        const room = rooms[roomId];
+        if (room && room.hostId === socket.id) { // ホストのみが設定可能
+            room.quizFile = quizFile;
+            room.quizTitle = quizTitle;
+            room.quizSet = quizSet;
+            // クイズが選択されたら、部屋の全メンバーに状態更新を通知
+            io.to(roomId).emit('roomStateUpdate', room);
+            console.log(`Room ${roomId} quiz type set to: ${quizTitle}`);
+        }
+    });
+
+    socket.on('toggleRoomVisibility', ({ roomId }) => {
         const room = rooms[roomId];
         if (room && room.hostId === socket.id) {
             room.isVisible = !room.isVisible;
-            emitRoomList(); // 部屋リストを更新
-            emitRoomState(roomId); // 部屋の状態を更新
-            console.log(`部屋 ${roomId} の表示状態を ${room.isVisible ? '表示' : '非表示'} に切り替えました。`);
+            io.to(roomId).emit('roomStateUpdate', room);
+            io.emit('roomList', getPublicRoomList()); // 全クライアントに部屋リストを更新
+            console.log(`Room ${roomId} visibility toggled to ${room.isVisible}`);
         }
     });
 
-    // 準備状態を設定
-    socket.on('setReady', ({ roomId, isReady }) => {
+    socket.on('startGame', ({ roomId, quizSet, quizTitle }) => {
         const room = rooms[roomId];
-        if (room && room.players[socket.id]) {
-            room.players[socket.id].ready = isReady;
-            emitRoomState(roomId); // 部屋の状態を更新
-            console.log(`${room.players[socket.id].name} (${socket.id}) が部屋 ${roomId} で準備状態を ${isReady} にしました。`);
-        }
-    });
-
-    // ホストがクイズタイプを選択
-    socket.on('selectQuizType', ({ roomId, type }) => {
-        const room = rooms[roomId];
-        if (room && room.hostId === socket.id && room.status === 'waiting' && (type === 'kokumei' || type === 'shutomei')) {
-            room.quizType = type;
-            emitRoomState(roomId); // 部屋の状態を更新
-            console.log(`部屋 ${roomId} のクイズタイプが ${type} に設定されました。`);
-        }
-    });
-
-    // ゲーム開始
-    socket.on('startGame', (roomId) => {
-        const room = rooms[roomId];
-        // 変更点: 参加プレイヤーが一人でもクイズを開始できるように
-        // room.quizType が選択されており、ホストであること、ステータスが 'waiting' であることを確認
-        if (room && room.hostId === socket.id && room.status === 'waiting' && room.quizType) {
-            // 全員が準備OKか、またはホストが強制的に開始するか (今回は「全員準備OK」のチェックを削除)
-            // if (Object.values(room.players).every(p => p.ready)) { // この行は削除
-            
-            room.status = 'playing';
-            room.currentQuestionIndex = 0;
-            
-            // 全員のスコアをリセットし、準備状態もリセット
-            Object.values(room.players).forEach(player => {
-                player.score = 0;
-                player.ready = false;
-            });
-
-            // 選択されたクイズタイプに基づいて質問をセット
-            if (room.quizType === 'kokumei') {
-                room.questions = [...kokumeiQuizData];
-            } else if (room.quizType === 'shutomei') {
-                room.questions = [...shutomeiQuizData];
-            }
-
-            // 問題をシャッフル
-            for (let i = room.questions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [room.questions[i], room.questions[j]] = [room.questions[j], room.questions[i]];
-            }
-
-            io.to(roomId).emit('gameStarted');
-            console.log(`ゲーム開始: 部屋 ${roomId}, クイズタイプ: ${room.quizType}`);
-
-            // 最初の問題を出題
-            sendNextQuestion(roomId);
-            emitRoomList(); // 部屋リストを更新（ステータス変更のため）
-            emitRoomState(roomId); // 部屋の状態を更新
-            /*
-            } else {
-                socket.emit('feedback', '全員が準備完了になっていません。'); // このフィードバックは不要になる
-            }
-            */
-        } else {
-            console.log(`ゲーム開始条件を満たしていません: 部屋 ${roomId}`);
-            console.log(`ホスト: ${room?.hostId === socket.id}, ステータス: ${room?.status}, クイズタイプ: ${room?.quizType}`);
-            socket.emit('feedback', 'ゲーム開始条件が満たされていません。');
-        }
-    });
-
-    // 解答を送信
-    socket.on('submitAnswer', (roomId, answer) => {
-        const room = rooms[roomId];
-        // ゲーム中であり、まだ正解者がいない場合のみ処理
-        if (room && room.status === 'playing' && room.currentQuestion && room.correctAnswerer === null) {
-            // 回答を正規化（例: 大文字小文字を区別しない、全角半角を区別しないなど）
-            const normalizeAnswer = (str) => {
-                if (!str) return '';
-                return str.toLowerCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)); // 全角英数を半角に
-            };
-
-            const isCorrect = (normalizeAnswer(answer) === normalizeAnswer(room.currentQuestion.answer));
-
-            if (isCorrect) {
-                const timeTaken = (Date.now() - room.questionStartTime) / 1000;
-                room.correctAnswerer = socket.id;
-                room.correctAnswererTime = timeTaken;
-                room.players[socket.id].score = (room.players[socket.id].score || 0) + 1; // スコアを加算
-
-                io.to(roomId).emit('correctAnswer', {
-                    playerId: socket.id,
-                    score: room.players[socket.id].score,
-                    timeTaken: timeTaken,
-                    correctAnswerText: room.currentQuestion.answer // 正しい答えのテキストも送る
-                });
-                console.log(`部屋 ${roomId}: ${room.players[socket.id].name} が正解しました！ タイム: ${timeTaken.toFixed(2)}秒`);
-
-                // 3秒後に次の問題に進むかゲームを終了する
-                setTimeout(() => {
-                    room.currentQuestionIndex++;
-                    sendNextQuestion(roomId);
-                }, 3000);
-            } else {
-                socket.emit('feedback', '不正解...');
-                console.log(`部屋 ${roomId}: ${room.players[socket.id].name} が不正解でした。`);
-            }
-        }
-    });
-
-    // ホストがロビーに戻る
-    socket.on('returnToLobby', (roomId) => {
-        const room = rooms[roomId];
-        if (room && room.hostId === socket.id && room.status === 'finished') {
-            room.status = 'waiting';
-            room.quizType = null; // クイズタイプもリセット
-            room.currentQuestion = null;
-            room.currentQuestionIndex = 0;
-            room.correctAnswerer = null;
-            room.correctAnswererTime = null;
-            // プレイヤーの準備状態とスコアをリセット
-            Object.values(room.players).forEach(player => {
-                player.ready = false;
-                player.score = 0;
-            });
-            emitRoomList();
-            emitRoomState(roomId);
-            console.log(`部屋 ${roomId} がロビーに戻りました。`);
-        }
-    });
-
-    // 部屋を退出
-    socket.on('leaveRoom', (roomId) => {
-        const room = rooms[roomId];
-        if (room && room.players[socket.id]) {
-            const playerName = room.players[socket.id].name;
-            socket.leave(roomId);
-            delete room.players[socket.id];
-            console.log(`${playerName} (${socket.id}) が部屋 ${roomId} から退出しました。`);
-
-            if (Object.keys(room.players).length === 0) {
-                // 部屋に誰もいなくなった場合
-                delete rooms[roomId];
-                console.log(`部屋 ${roomId} に誰もいなくなったため削除しました。`);
-            } else if (room.hostId === socket.id) {
-                // ホストが退出した場合、新しいホストを割り当てる
-                const newHostId = Object.keys(room.players)[0];
-                if (newHostId) {
-                    room.hostId = newHostId;
-                    room.players[newHostId].isHost = true;
-                    io.to(roomId).emit('newHost', newHostId); // 新しいホストを通知
-                    console.log(`部屋 ${roomId} の新しいホストは ${room.players[newHostId].name} (${newHostId}) です。`);
-                }
-            }
-            emitRoomList(); // 部屋リストを更新
-            if (rooms[roomId]) { // 部屋がまだ存在する場合のみ状態を更新
-                emitRoomState(roomId);
-            }
-        }
-    });
-
-    // 接続切断
-    socket.on('disconnect', () => {
-        console.log('ユーザーが切断しました:', socket.id);
-        for (const roomId in rooms) {
-            const room = rooms[roomId];
-            if (room.players[socket.id]) {
-                const disconnectedPlayerName = room.players[socket.id].name;
-                delete room.players[socket.id];
-                io.to(roomId).emit('playerLeft', socket.id, disconnectedPlayerName); // 部屋の全員にプレイヤーが退出したことを通知
-                console.log(`${disconnectedPlayerName}(${socket.id}) が部屋 ${roomId} から退出しました。`);
-
-                if (Object.keys(room.players).length === 0) {
-                    // 部屋に誰もいなくなった場合
-                    delete rooms[roomId];
-                    console.log(`部屋 ${roomId} に誰もいなくなったため削除しました。`);
-                } else if (room.hostId === socket.id) {
-                    // ホストが切断した場合、新しいホストを割り当てる
-                    const newHostId = Object.keys(room.players)[0];
-                    if (newHostId) {
-                        room.hostId = newHostId;
-                        room.players[newHostId].isHost = true;
-                        io.to(roomId).emit('newHost', newHostId); // 新しいホストを通知
-                        console.log(`部屋 ${roomId} の新しいホストは ${room.players[newHostId].name} (${newHostId}) です。`);
-                    }
-                }
-                // 部屋リストと部屋の状態を更新
-                emitRoomList();
-                if (rooms[roomId]) { // 部屋がまだ存在する場合のみ状態を更新
-                    emitRoomState(roomId);
-                }
+        if (room && room.hostId === socket.id && !room.isPlaying && room.quizFile) {
+            // 全員が準備完了か確認 (ホストは常に準備完了とみなす)
+            // プレイヤーが1人だけでもゲームを開始できるように `room.players.length > 0` を追加
+            const allReady = room.players.length > 0 && room.players.every(p => p.isReady || p.isHost);
+            if (!allReady) {
+                // クライアント側でボタンをdisabledにしているので、通常ここには来ないはず
+                console.warn(`Attempted to start game in room ${roomId} but not all players are ready.`);
                 return;
             }
+
+            room.isPlaying = true;
+            room.currentQuestionIndex = 0;
+            room.questions = shuffleArray(quizData[room.quizFile]).slice(0, 10); // 10問にシャッフルして設定
+            room.startTime = Date.now(); // ゲーム開始時刻を設定
+            room.players.forEach(p => {
+                p.score = 0; // スコアをリセット
+                p.finalTime = null; // 最終タイムをリセット
+                p.isFinished = false; // ゲーム終了状態をリセット
+                p.isReady = true; // ゲーム中は全員準備OK扱い
+                p.startTimeOffset = 0; // ゲーム開始時のオフセットをリセット
+            });
+
+            io.to(roomId).emit('gameStarted', {
+                questions: room.questions,
+                quizSet: room.quizSet,
+                quizTitle: room.quizTitle,
+                inputMethod: "flick" // 仮でフリック固定。後でホストが選択できるようにする
+            });
+            io.emit('roomList', getPublicRoomList()); // 全クライアントに部屋リストを更新
+            console.log(`Game started in room ${roomId} with ${room.players.length} players.`);
+        }
+    });
+
+    socket.on('submitAnswer', ({ roomId, questionIndex, answer, isCorrect, score }) => {
+        const room = rooms[roomId];
+        if (room && room.isPlaying) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) {
+                // プレイヤーのスコアを更新
+                player.score = score;
+                console.log(`${player.nickname} in room ${roomId} answered Q${questionIndex}: ${answer} (Correct: ${isCorrect}, Score: ${score})`);
+
+                // 全員の解答が揃ったかチェック (今回は即座に次の問題へ進むためこのロジックは簡略化)
+                // 複数プレイヤーが同時に解答するケースは、それぞれのクライアントで次の問題へ進む
+
+                // サーバー側ではプレイヤーの最新スコアを部屋の状態に反映
+                io.to(roomId).emit('roomStateUpdate', room); // 必要に応じてプレイヤーリストのスコアを更新
+            }
+        }
+    });
+
+    socket.on('playerFinished', ({ roomId, finalTime, score }) => {
+        const room = rooms[roomId];
+        if (room && room.isPlaying) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) {
+                player.finalTime = finalTime; // 最終タイムを記録
+                player.score = score; // 最終スコアを記録
+                player.isFinished = true; // 完了フラグ
+                console.log(`Player ${player.nickname} in room ${roomId} finished in ${finalTime}s with ${score} score.`);
+
+                // 全員がゲームを終了したかチェック
+                const allFinished = room.players.every(p => p.isFinished);
+                if (allFinished) {
+                    console.log(`All players in room ${roomId} finished.`);
+                    io.to(roomId).emit('gameFinished', {
+                        message: '全員が解答を終えました！',
+                        players: room.players
+                    });
+                    room.isPlaying = false; // ゲーム終了
+                    io.emit('roomList', getPublicRoomList()); // 部屋リストを更新 (ステータス変更)
+                } else {
+                    // まだ全員終わっていない場合、他のプレイヤーに状態更新を送信
+                    io.to(roomId).emit('roomStateUpdate', room);
+                    // ここで、他のプレイヤーに「誰かが終わったよ」といった情報や、
+                    // 全員が終わり次第結果を表示するような通知を送ることも可能
+                }
+            }
+        }
+    });
+
+    socket.on('updatePlayerTime', ({ roomId, time }) => {
+        const room = rooms[roomId];
+        if (room && room.isPlaying) {
+            // 各プレイヤーの経過時間はクライアントで管理し、最終タイムのみ送信するように変更したので、
+            // このイベントは基本的に不要になりました。
+            // もし、リアルタイムに全員のタイムを共有したい場合は、このロジックを実装します。
+            // 例: room.playerTimes[socket.id] = time;
+            //     io.to(roomId).emit('playerTimesUpdated', room.playerTimes);
+        }
+    });
+
+    socket.on('returnToLobby', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (room) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) {
+                // プレイヤーの準備状態をリセット (ホストは常にtrue)
+                player.isReady = player.isHost;
+                // スコアなどをリセットする必要があればここで
+                player.score = 0;
+                player.finalTime = null;
+                player.isFinished = false;
+            }
+            // ゲーム中フラグはgameFinishedでfalseになるはずだが、念のため
+            room.isPlaying = false; 
+            io.to(roomId).emit('roomStateUpdate', room); // ロビー状態を更新
+            io.emit('roomList', getPublicRoomList()); // 部屋リストを更新
+            console.log(`Player ${player.nickname} returned to lobby in room ${roomId}`);
+        }
+    });
+
+    socket.on('leaveRoom', ({ roomId }) => {
+        handlePlayerLeave(socket, roomId);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        // socket.roomId が設定されていれば、その部屋から退出処理を行う
+        if (socket.roomId && rooms[socket.roomId]) {
+            handlePlayerLeave(socket, socket.roomId);
         }
     });
 });
+
+function handlePlayerLeave(socket, roomId) {
+    const room = rooms[roomId];
+    if (room) {
+        room.players = room.players.filter(p => p.id !== socket.id);
+        socket.leave(roomId);
+
+        if (room.players.length === 0) {
+            // 部屋に誰もいなくなったら部屋を削除
+            delete rooms[roomId];
+            console.log(`Room ${roomId} deleted as it is empty.`);
+        } else {
+            // ホストが退出した場合、新しいホストを選出
+            if (room.hostId === socket.id) {
+                const newHost = room.players[0];
+                if (newHost) {
+                    room.hostId = newHost.id;
+                    newHost.isHost = true;
+                    newHost.isReady = true; // 新しいホストも準備OKにする
+                    room.hostName = newHost.nickname;
+                    console.log(`Player ${newHost.nickname} is new host for room ${roomId}`);
+                }
+            }
+            io.to(roomId).emit('roomStateUpdate', room); // 部屋の全メンバーに状態更新
+        }
+        io.emit('roomList', getPublicRoomList()); // 全クライアントに部屋リストを更新
+        console.log(`User ${socket.id} left room: ${roomId}. Players left: ${room.players.length}`);
+    }
+}
+
+// 公開する部屋リストを返す関数 (パスワード関連は削除)
+function getPublicRoomList() {
+    return Object.values(rooms).map(room => ({
+        id: room.id,
+        name: room.name,
+        players: room.players.map(p => ({ nickname: p.nickname, isHost: p.isHost, isReady: p.isReady, score: p.score })),
+        hostName: room.hostName,
+        isPlaying: room.isPlaying,
+        isVisible: room.isVisible, // 公開・非公開状態も渡す
+        maxPlayers: room.maxPlayers
+    })).filter(room => room.isVisible); // isVisibleがtrueの部屋のみを返す
+}
+
+// 4桁の数字のルームIDを生成する関数
+function generateRoomId() {
+    let roomId;
+    let isUnique = false;
+    while (!isUnique) {
+        roomId = Math.floor(1000 + Math.random() * 9000).toString(); // 1000 から 9999
+        if (!rooms[roomId]) {
+            isUnique = true;
+        }
+    }
+    return roomId;
+}
 
 server.listen(PORT, () => {
     console.log(`サーバーがポート ${PORT} で起動しました。`);
