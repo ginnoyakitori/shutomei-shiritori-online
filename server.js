@@ -3,7 +3,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const { v4: uuidv4 } = require('uuid'); // ユニークなID生成用
+// const { v4: uuidv4 } = require('uuid'); // uuidv4は不要になるためコメントアウトまたは削除
 const fs = require('fs'); // fsモジュールを追加
 
 const app = express();
@@ -23,6 +23,7 @@ app.use(express.static('public'));
 
 // ゲームの状態を保持するオブジェクト
 const rooms = {};
+const MAX_ROOMS_DISPLAY = 10; // 常に表示する部屋数 (実際の最大部屋数ではない)
 
 // クイズデータ
 let kokumeiQuizData = [];
@@ -31,55 +32,86 @@ let shutomeiQuizData = [];
 // CSVファイルからクイズデータを読み込む関数
 function loadQuizData() {
     try {
+        // kokumei.csv
         const kokumeiContent = fs.readFileSync('kokumei.csv', 'utf8');
-        kokumeiQuizData = kokumeiContent.split('\n').map(line => {
-            const parts = line.trim().split(',');
-            if (parts.length === 2) {
-                return { question: parts[0].trim(), answer: parts[1].trim() };
-            }
-            return null;
-        }).filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
+        kokumeiQuizData = kokumeiContent.split('\n')
+            .map(line => {
+                const parts = line.trim().split(',');
+                if (parts.length === 2) {
+                    return { question: parts[0].trim(), answer: parts[1].trim() };
+                }
+                return null;
+            })
+            .filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
         console.log(`kokumei.csv loaded: ${kokumeiQuizData.length} questions`);
 
+        // shutomei.csv
         const shutomeiContent = fs.readFileSync('shutomei.csv', 'utf8');
-        shutomeiQuizData = shutomeiContent.split('\n').map(line => {
-            const parts = line.trim().split(',');
-            if (parts.length === 2) {
-                return { question: parts[0].trim(), answer: parts[1].trim() };
-            }
-            return null;
-        }).filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
+        shutomeiQuizData = shutomeiContent.split('\n')
+            .map(line => {
+                const parts = line.trim().split(',');
+                if (parts.length === 2) {
+                    return { question: parts[0].trim(), answer: parts[1].trim() };
+                }
+                return null;
+            })
+            .filter(item => item !== null && item.question !== '' && item.answer !== ''); // 空行や不完全な行を除外
         console.log(`shutomei.csv loaded: ${shutomeiQuizData.length} questions`);
 
     } catch (error) {
         console.error("Error loading quiz data:", error);
+        // ファイルが見つからないなどの場合、デフォルトのデータを設定するか、サーバーを停止するなど適切なエラーハンドリングを行う
+        // ここでは空のままにしておく
     }
 }
 
 // サーバー起動時にクイズデータを読み込む
 loadQuizData();
 
-// 部屋リストを全クライアントに送信
+// 部屋の状態をクライアントに送信するヘルパー関数
 function emitRoomList() {
-    const publicRooms = Object.values(rooms).map(room => ({
-        id: room.id,
-        name: room.name,
-        playersCount: Object.keys(room.players).length,
-        maxPlayers: 4, // 仮の最大プレイヤー数
-        status: room.status,
-        isVisible: room.isVisible // 部屋リストに表示するかどうか
-    }));
-    io.emit('roomList', publicRooms);
+    const roomList = Object.values(rooms)
+        .filter(room => room.isVisible) // isVisibleがtrueの部屋のみ表示
+        .map(room => ({
+            id: room.id,
+            name: room.name,
+            playersCount: Object.keys(room.players).length,
+            // maxPlayersは削除されるため、ここでは含めない
+            status: room.status,
+            hasPassword: room.password !== null, // パスワードの概念は今回のコードにはないので常にfalseになる
+            quizType: room.quizType
+        }));
+
+    // MAX_ROOMS_DISPLAYまで空の部屋情報も追加して常に10部屋表示 (このロジックは維持)
+    const paddedRoomList = [...roomList];
+    while (paddedRoomList.length < MAX_ROOMS_DISPLAY) {
+        paddedRoomList.push({ id: null, name: "空き部屋", playersCount: 0, status: "empty", hasPassword: false, quizType: null });
+    }
+
+    io.emit('roomList', paddedRoomList.slice(0, MAX_ROOMS_DISPLAY));
     console.log("部屋リストを更新しました。");
 }
 
 // 特定の部屋の状態をその部屋の全員に送信
 function emitRoomState(roomId) {
     const room = rooms[roomId];
-    if (room) {
-        io.to(roomId).emit('roomState', room);
-        console.log(`部屋 ${roomId} の状態を更新しました。`);
-    }
+    if (!room) return;
+
+    // プレイヤーオブジェクトを配列に変換して送信
+    const playersArray = Object.values(room.players);
+
+    io.to(roomId).emit('roomState', {
+        id: room.id,
+        name: room.name,
+        players: playersArray, // 配列として送信
+        status: room.status,
+        hostId: room.hostId,
+        quizType: room.quizType,
+        currentQuestion: room.currentQuestion ? { text: room.currentQuestion.text, questionNumber: room.currentQuestion.questionNumber } : null,
+        correctAnswerer: room.correctAnswerer,
+        correctAnswererTime: room.correctAnswererTime
+    });
+    console.log(`部屋 ${roomId} の状態を更新しました。`);
 }
 
 // 新しい問題を出題する関数
@@ -99,7 +131,8 @@ function sendNextQuestion(roomId) {
 
             io.to(roomId).emit('newQuestion', {
                 text: room.currentQuestion.text,
-                questionNumber: room.currentQuestion.questionNumber
+                questionNumber: room.currentQuestion.questionNumber,
+                quizType: room.quizType // クイズタイプもここで送る
             });
             console.log(`部屋 ${roomId} に新しい問題を出題: ${room.currentQuestion.text}`);
         } else {
@@ -124,14 +157,16 @@ function sendNextQuestion(roomId) {
 io.on('connection', (socket) => {
     console.log('ユーザーが接続しました:', socket.id);
 
-    // 部屋リストのリクエストを受信
-    socket.on('requestRoomList', () => {
-        emitRoomList();
-    });
+    // 接続時に部屋リストを送信
+    emitRoomList();
 
     // 部屋を作成
     socket.on('createRoom', ({ roomName, nickname }) => {
-        const roomId = uuidv4().slice(0, 4); // 4桁の短いIDを生成
+        let roomId;
+        do {
+            roomId = Math.floor(1000 + Math.random() * 9000).toString(); // 1000から9999までの4桁の数字
+        } while (rooms[roomId]); // 既に存在するIDなら再生成
+
         rooms[roomId] = {
             id: roomId,
             name: roomName,
@@ -164,16 +199,46 @@ io.on('connection', (socket) => {
             console.log(`参加失敗: 部屋 ${roomId} が見つかりません。`);
             return;
         }
-        if (room.status !== 'waiting') {
+        if (room.status !== 'waiting' && room.status !== 'finished') { // finished状態でも再参加可能にする
             socket.emit('roomError', 'この部屋は現在ゲーム中です。');
             console.log(`参加失敗: 部屋 ${roomId} はゲーム中です。`);
             return;
         }
-        if (Object.keys(room.players).length >= 4) { // 仮の最大プレイヤー数
-            socket.emit('roomError', 'この部屋は満員です。');
-            console.log(`参加失敗: 部屋 ${roomId} は満員です。`);
-            return;
+        // if (Object.keys(room.players).length >= 4) { // 最大プレイヤー数のチェックは削除
+        //     socket.emit('roomError', 'この部屋は満員です。');
+        //     console.log(`参加失敗: 部屋 ${roomId} は満員です。`);
+        //     return;
+        // }
+
+        // 既にどこかの部屋にいる場合は退出させる
+        for (const rId in rooms) {
+            if (rooms[rId].players[socket.id]) {
+                const playerToLeave = rooms[rId].players[socket.id];
+                socket.leave(rId);
+                delete rooms[rId].players[socket.id];
+                io.to(rId).emit('playerLeft', socket.id, playerToLeave.name); // 元の部屋に退出を通知
+                console.log(`${playerToLeave.name}(${socket.id}) が部屋 ${rId} から退出しました。`);
+
+                if (Object.keys(rooms[rId].players).length === 0) {
+                    delete rooms[rId];
+                    console.log(`部屋 ${rId} に誰もいなくなったため削除しました。`);
+                } else if (rooms[rId].hostId === socket.id) {
+                    const newHostId = Object.keys(rooms[rId].players)[0];
+                    if (newHostId) {
+                        rooms[rId].hostId = newHostId;
+                        rooms[rId].players[newHostId].isHost = true;
+                        io.to(rId).emit('newHost', newHostId);
+                        console.log(`部屋 ${rId} の新しいホストは ${rooms[rId].players[newHostId].name} (${newHostId}) です。`);
+                    }
+                }
+                emitRoomList();
+                if (rooms[rId]) {
+                    emitRoomState(rId);
+                }
+                break;
+            }
         }
+
 
         room.players[socket.id] = { name: nickname, score: 0, ready: false, isHost: false };
         socket.join(roomId);
@@ -183,7 +248,7 @@ io.on('connection', (socket) => {
         console.log(`${nickname} (${socket.id}) が部屋 ${roomId} に参加しました。`);
     });
 
-    // 部屋の表示/非表示を切り替え
+    // 部屋の表示/非表示を切り替え (クライアント側でこのボタンを削除したので、この機能は使われなくなるが、サーバー側は残しておく)
     socket.on('toggleRoomVisibility', (roomId) => {
         const room = rooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -207,7 +272,7 @@ io.on('connection', (socket) => {
     // ホストがクイズタイプを選択
     socket.on('selectQuizType', ({ roomId, type }) => {
         const room = rooms[roomId];
-        if (room && room.hostId === socket.id && (type === 'kokumei' || type === 'shutomei')) {
+        if (room && room.hostId === socket.id && room.status === 'waiting' && (type === 'kokumei' || type === 'shutomei')) {
             room.quizType = type;
             emitRoomState(roomId); // 部屋の状態を更新
             console.log(`部屋 ${roomId} のクイズタイプが ${type} に設定されました。`);
@@ -217,13 +282,20 @@ io.on('connection', (socket) => {
     // ゲーム開始
     socket.on('startGame', (roomId) => {
         const room = rooms[roomId];
-        // ④ 一人でもクイズを開始できるように変更
-        if (room && room.hostId === socket.id && room.status === 'waiting' && room.quizType && Object.keys(room.players).length >= 1 && Object.values(room.players).every(p => p.ready)) {
+        // 変更点: 参加プレイヤーが一人でもクイズを開始できるように
+        // room.quizType が選択されており、ホストであること、ステータスが 'waiting' であることを確認
+        if (room && room.hostId === socket.id && room.status === 'waiting' && room.quizType) {
+            // 全員が準備OKか、またはホストが強制的に開始するか (今回は「全員準備OK」のチェックを削除)
+            // if (Object.values(room.players).every(p => p.ready)) { // この行は削除
+            
             room.status = 'playing';
             room.currentQuestionIndex = 0;
-            room.players = Object.fromEntries(
-                Object.entries(room.players).map(([id, player]) => [id, { ...player, score: 0 }])
-            ); // 全員のスコアをリセット
+            
+            // 全員のスコアをリセットし、準備状態もリセット
+            Object.values(room.players).forEach(player => {
+                player.score = 0;
+                player.ready = false;
+            });
 
             // 選択されたクイズタイプに基づいて質問をセット
             if (room.quizType === 'kokumei') {
@@ -243,9 +315,16 @@ io.on('connection', (socket) => {
 
             // 最初の問題を出題
             sendNextQuestion(roomId);
+            emitRoomList(); // 部屋リストを更新（ステータス変更のため）
+            emitRoomState(roomId); // 部屋の状態を更新
+            /*
+            } else {
+                socket.emit('feedback', '全員が準備完了になっていません。'); // このフィードバックは不要になる
+            }
+            */
         } else {
             console.log(`ゲーム開始条件を満たしていません: 部屋 ${roomId}`);
-            console.log(`ホスト: ${room?.hostId === socket.id}, ステータス: ${room?.status}, クイズタイプ: ${room?.quizType}, プレイヤー数: ${Object.keys(room?.players || {}).length}, 全員準備OK: ${Object.values(room?.players || {}).every(p => p.ready)}`);
+            console.log(`ホスト: ${room?.hostId === socket.id}, ステータス: ${room?.status}, クイズタイプ: ${room?.quizType}`);
             socket.emit('feedback', 'ゲーム開始条件が満たされていません。');
         }
     });
@@ -255,7 +334,15 @@ io.on('connection', (socket) => {
         const room = rooms[roomId];
         // ゲーム中であり、まだ正解者がいない場合のみ処理
         if (room && room.status === 'playing' && room.currentQuestion && room.correctAnswerer === null) {
-            if (answer.toLowerCase() === room.currentQuestion.answer.toLowerCase()) {
+            // 回答を正規化（例: 大文字小文字を区別しない、全角半角を区別しないなど）
+            const normalizeAnswer = (str) => {
+                if (!str) return '';
+                return str.toLowerCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)); // 全角英数を半角に
+            };
+
+            const isCorrect = (normalizeAnswer(answer) === normalizeAnswer(room.currentQuestion.answer));
+
+            if (isCorrect) {
                 const timeTaken = (Date.now() - room.questionStartTime) / 1000;
                 room.correctAnswerer = socket.id;
                 room.correctAnswererTime = timeTaken;
@@ -264,7 +351,8 @@ io.on('connection', (socket) => {
                 io.to(roomId).emit('correctAnswer', {
                     playerId: socket.id,
                     score: room.players[socket.id].score,
-                    timeTaken: timeTaken
+                    timeTaken: timeTaken,
+                    correctAnswerText: room.currentQuestion.answer // 正しい答えのテキストも送る
                 });
                 console.log(`部屋 ${roomId}: ${room.players[socket.id].name} が正解しました！ タイム: ${timeTaken.toFixed(2)}秒`);
 
@@ -285,10 +373,15 @@ io.on('connection', (socket) => {
         const room = rooms[roomId];
         if (room && room.hostId === socket.id && room.status === 'finished') {
             room.status = 'waiting';
+            room.quizType = null; // クイズタイプもリセット
+            room.currentQuestion = null;
+            room.currentQuestionIndex = 0;
+            room.correctAnswerer = null;
+            room.correctAnswererTime = null;
             // プレイヤーの準備状態とスコアをリセット
-            Object.keys(room.players).forEach(playerId => {
-                room.players[playerId].ready = false;
-                room.players[playerId].score = 0;
+            Object.values(room.players).forEach(player => {
+                player.ready = false;
+                player.score = 0;
             });
             emitRoomList();
             emitRoomState(roomId);

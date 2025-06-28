@@ -3,63 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>国名しりとり</title> <link rel="stylesheet" href="style.css">
+    <title>クイズ早押し！</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="container">
-        <h1>国名しりとり</h1> <section id="lobby-section" class="active-section"> <h2>部屋一覧</h2>
-            <div id="room-list">
-                <p>部屋がありません。部屋を作成してください。</p>
-            </div>
-            <div class="lobby-controls">
-                <input type="text" id="nickname-input" placeholder="ニックネームを入力">
-                <input type="text" id="create-room-name-input" placeholder="部屋名を入力 (任意)">
-                <button id="create-room-btn" class="primary-btn">部屋を作成</button> <input type="text" id="join-room-id-input" placeholder="部屋IDを入力">
-                <button id="join-room-btn" class="primary-btn">部屋に参加</button> </div>
-        </section>
+    <div id="lobby-section" class="section">
+        <h1>クイズ早押し！</h1>
+        <h2>部屋一覧</h2>
+        <div id="rooms-container">
+            <p>部屋がありません。部屋を作成してください。</p>
+        </div>
 
-        <section id="game-room-section" class="hidden-section"> <h2 id="room-name-display">部屋名: <span id="current-room-id-span"></span></h2>
-            <p>ホスト: <span id="host-name"></span></p>
-            <p>クイズタイプ: <span id="quiz-type-display">未選択</span></p>
+        <div class="input-group">
+            <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
+            <input type="text" id="roomNameInput" placeholder="部屋名を入力 (任意)">
+            <input type="password" id="passwordInput" placeholder="パスワード (任意)">
+            <button id="createRoomBtn">部屋を作成</button>
+        </div>
 
-            <h3>参加プレイヤー</h3>
-            <div id="player-list">
-                </div>
+        <div class="input-group">
+            <input type="text" id="joinRoomIdInput" placeholder="ルームIDを入力">
+            <input type="password" id="joinPasswordInput" placeholder="パスワード (任意)">
+            <button id="joinRoomBtn">ルームIDで入室</button>
+        </div>
+    </div>
 
-            <div id="host-controls" class="control-group"> <p>クイズタイプを選択:</p>
-                <button id="select-kokumei-btn" class="action-btn">国名</button> <button id="select-shutomei-btn" class="action-btn">首都名</button> <button id="toggle-visibility-btn" class="secondary-btn">部屋の表示/非表示</button> <button id="start-game-btn" class="primary-btn" disabled>ゲーム開始</button> </div>
+    <div id="game-room-section" class="section" style="display: none;">
+        <h2 id="roomNameDisplay">部屋名: </h2>
+        <p id="hostDisplay">ホスト: </p>
+        <p id="quizTypeDisplay">クイズタイプ: 未選択</p>
 
-            <div id="player-controls" class="control-group"> <button id="ready-btn" class="primary-btn">準備完了</button> <button id="unready-btn" class="primary-btn hidden">準備解除</button> <button id="leave-room-btn" class="danger-btn">部屋を退出</button> </div>
-
-            <div id="game-area" class="hidden">
-                <h3>問題 <span id="question-number-display"></span></h3>
-                <p id="question-text"></p>
-                <input type="text" id="answer-input" placeholder="解答を入力" readonly>
-                <button id="submit-answer-btn" class="primary-btn">解答</button> <div id="flick-keyboard">
-                    <div id="flick-grid">
-                        <button class="flick-btn" data-base="わ">
-                            <span class="hint top">ン</span>
-                            <span class="hint right">ー</span>
-                            <span class="hint bottom"></span>
-                            <span class="hint left">ヲ</span>
-                            <span class="center">ワ</span>
-                        </button>
-                    </div>
-                    <div class="flick-controls">
-                        <button id="clear-btn" class="secondary-btn">消</button> <button id="modify-btn" class="secondary-btn">濁/小</button> </div>
-                </div>
-
-                <div id="result-display">
-                    <p id="correct-answer-info"></p>
-                </div>
+        <h3>参加プレイヤー</h3>
+        <div id="playersList">
             </div>
 
-            <div id="game-over-section" class="hidden-section">
-                <h3>ゲーム終了！</h3>
-                <p>最終結果:</p>
-                <div id="final-scores"></div>
-                <button id="return-to-lobby-btn" class="primary-btn">ロビーに戻る</button> </div>
-        </section>
+        <div id="host-controls" class="controls-group">
+            <div id="quiz-type-selection">
+                <p>クイズタイプを選択:</p>
+                <button id="selectKokumeiBtn">国名</button>
+                <button id="selectShutomeiBtn">首都名</button>
+            </div>
+            <button id="startGameBtn">ゲーム開始</button>
+        </div>
+        
+        <div id="player-controls" class="controls-group">
+            <button id="setReadyBtn">準備完了</button>
+            <button id="cancelReadyBtn" style="display: none;">準備解除</button>
+            <button id="leaveRoomBtn">部屋を退出</button>
+        </div>
+
+        <div id="game-section" style="display: none;">
+            <p>問題 <span id="questionNumberDisplay"></span>/1</p>
+            <p id="questionText"></p>
+            <p id="timerDisplay">タイム: 0.00秒</p>
+            <input type="text" id="answerInput" placeholder="答えを入力" readonly>
+            
+            <div id="flick-keyboard">
+                <div class="key-row">
+                    <button class="flick-key" data-main="ア" data-flick="イ,ウ,エ,オ">ア</button>
+                    <button class="flick-key" data-main="カ" data-flick="キ,ク,ケ,コ">カ</button>
+                    <button class="flick-key" data-main="サ" data-flick="シ,ス,セ,ソ">サ</button>
+                    <button class="flick-key" data-main="タ" data-flick="チ,ツ,テ,ト">タ</button>
+                </div>
+                <div class="key-row">
+                    <button class="flick-key" data-main="ナ" data-flick="ニ,ヌ,ネ,ノ">ナ</button>
+                    <button class="flick-key" data-main="ハ" data-flick="ヒ,フ,ヘ,ホ">ハ</button>
+                    <button class="flick-key" data-main="マ" data-flick="ミ,ム,メ,モ">マ</button>
+                    <button class="flick-key" data-main="ヤ" data-flick="ユ,ヨ">ヤ</button>
+                </div>
+                <div class="key-row">
+                    <button class="flick-key" data-main="ラ" data-flick="リ,ル,レ,ロ">ラ</button>
+                    <button class="flick-key" data-main="ワ" data-flick="ヲ,ン">ワ</button>
+                    <button class="flick-key" data-main="ー" data-flick="ー,ッ,ゃ,ゅ,ょ">ー</button> <button class="flick-key" data-main="濁" data-flick="濁,半濁,小">濁</button> </div>
+                <div class="key-row">
+                    <button class="flick-key" data-main="消">消</button>
+                    <button class="flick-key" data-main="空白">空白</button>
+                </div>
+            </div>
+
+            <button id="submitAnswerBtn">解答</button>
+            <p id="feedbackMessage"></p>
+        </div>
+        <button id="returnToLobbyBtn" style="display: none;">待機画面に戻る</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
