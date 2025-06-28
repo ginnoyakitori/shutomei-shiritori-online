@@ -1,253 +1,493 @@
 // public/client.js
 
-// --- DOM要素の取得 ---
-const playerNameInput = document.getElementById('player-name-input');
-const setNameBtn = document.getElementById('set-name-btn');
-const myNameDisplay = document.getElementById('my-name-display');
+const socket = io();
 
-const loginSection = document.getElementById('login-section');
-const roomListSection = document.getElementById('room-list-section');
+// ===== DOM要素の取得 =====
+const lobbySection = document.getElementById('lobby-section');
 const gameRoomSection = document.getElementById('game-room-section');
+const gameOverSection = document.getElementById('game-over-section');
 
+const roomListEl = document.getElementById('room-list');
+const nicknameInput = document.getElementById('nickname-input');
+const createRoomNameInput = document.getElementById('create-room-name-input');
 const createRoomBtn = document.getElementById('create-room-btn');
-const roomsContainer = document.getElementById('rooms-container');
+const joinRoomIdInput = document.getElementById('join-room-id-input');
+const joinRoomBtn = document.getElementById('join-room-btn');
 
-const currentRoomIdSpan = document.getElementById('current-room-id');
+const roomNameDisplay = document.getElementById('room-name-display');
+const currentRoomIdSpan = document.getElementById('current-room-id-span');
 const hostNameSpan = document.getElementById('host-name');
-const playersList = document.getElementById('players-list');
-const setReadyBtn = document.getElementById('set-ready-btn');
+const quizTypeDisplay = document.getElementById('quiz-type-display');
+const playerListEl = document.getElementById('player-list');
+const hostControls = document.getElementById('host-controls');
+const selectKokumeiBtn = document.getElementById('select-kokumei-btn');
+const selectShutomeiBtn = document.getElementById('select-shutomei-btn');
+const toggleVisibilityBtn = document.getElementById('toggle-visibility-btn');
+const startGameBtn = document.getElementById('start-game-btn');
+const readyBtn = document.getElementById('ready-btn');
+const unreadyBtn = document.getElementById('unready-btn');
 const leaveRoomBtn = document.getElementById('leave-room-btn');
 
 const gameArea = document.getElementById('game-area');
-const questionNumberSpan = document.getElementById('question-number');
-const totalQuestionsSpan = document.getElementById('total-questions');
+const questionNumberDisplay = document.getElementById('question-number-display');
 const questionText = document.getElementById('question-text');
-const answerInput = document.getElementById('answer-input');
+const answerEl = document.getElementById('answer-input'); // フリックキーボードから入力される要素
 const submitAnswerBtn = document.getElementById('submit-answer-btn');
-const answerResult = document.getElementById('answer-result');
+const correctAnswerInfo = document.getElementById('correct-answer-info');
 
-const gameOverArea = document.getElementById('game-over-area');
-const finalResults = document.getElementById('final-results');
-const backToRoomsBtn = document.getElementById('back-to-rooms-btn');
+const finalScoresDiv = document.getElementById('final-scores');
+const returnToLobbyBtn = document.getElementById('return-to-lobby-btn');
 
-// --- グローバル変数 ---
-let socket; // Socket.IO クライアント
-let myName = "名無しさん";
+// ===== グローバル変数 =====
 let currentRoomId = null;
-let isReady = false;
+let myPlayerId = null; // 自分のsocket.idを保持する
+let currentRoomState = null; // 現在の部屋の状態を保持
 
-// --- UI表示切り替え関数 ---
+// ===== 画面切り替え関数 =====
 function showSection(sectionId) {
-    loginSection.style.display = 'none';
-    roomListSection.style.display = 'none';
-    gameRoomSection.style.display = 'none';
-    gameArea.style.display = 'none';
-    gameOverArea.style.display = 'none';
-
-    document.getElementById(sectionId).style.display = 'block';
+    const sections = [lobbySection, gameRoomSection, gameOverSection];
+    sections.forEach(section => {
+        section.classList.add('hidden-section');
+        section.classList.remove('active-section');
+    });
+    document.getElementById(sectionId).classList.remove('hidden-section');
+    document.getElementById(sectionId).classList.add('active-section');
 }
 
-// --- イベントリスナー ---
-setNameBtn.addEventListener('click', () => {
-    myName = playerNameInput.value.trim();
-    if (myName) {
-        myNameDisplay.textContent = `あなたの名前: ${myName}`;
-        showSection('room-list-section');
-        // ここでSocket.IO接続を開始
-        // Renderにデプロイ後は、render.comから与えられるURLに書き換える
-        socket = io(window.location.origin);
-        setupSocketListeners();
+// ===== 初期化処理 =====
+// Socket.IO接続確立後、部屋リストをリクエスト
+socket.on('connect', () => {
+    myPlayerId = socket.id; // 自分のSocket IDを保存
+    console.log('サーバーに接続しました。自分のID:', myPlayerId);
+    socket.emit('requestRoomList'); // 接続したら部屋リストを要求
+    showSection('lobby-section'); // 初期表示はロビー画面
+});
+
+// ===== Socket.IOイベントリスナー =====
+
+socket.on('disconnect', () => {
+    alert('サーバーとの接続が切れました。ページを再読み込みしてください。');
+    // 必要に応じてページをリロード
+    // location.reload();
+});
+
+socket.on('error', (message) => {
+    alert('エラー： ' + message);
+    console.error('サーバーエラー:', message);
+});
+
+// 部屋リストを受信
+socket.on('roomList', (rooms) => {
+    console.log('--- roomList イベントを受信しました ---');
+    console.log('受信した部屋リスト:', rooms);
+    roomListEl.innerHTML = ''; // 既存のリストをクリア
+
+    if (rooms.length === 0) {
+        roomListEl.innerHTML = '<p>部屋がありません。部屋を作成してください。</p>';
+        return;
+    }
+
+    rooms.forEach(room => {
+        if (room.isVisible) { // 表示設定されている部屋のみ表示
+            const roomItem = document.createElement('div');
+            roomItem.className = 'room-item';
+            roomItem.innerHTML = `
+                <span>${room.name} (${room.id}) - ${room.playersCount}/4人 - 状態: ${room.status === 'waiting' ? '待機中' : 'ゲーム中'}</span>
+                <button class="join-room-button" data-room-id="${room.id}" ${room.status !== 'waiting' || room.playersCount >= 4 ? 'disabled' : ''}>参加</button>
+            `;
+            roomListEl.appendChild(roomItem);
+        }
+    });
+
+    // 参加ボタンにイベントリスナーを設定 (部屋リストが更新されるたびに再設定が必要)
+    document.querySelectorAll('.join-room-button').forEach(button => {
+        button.onclick = (e) => {
+            const roomId = e.target.dataset.roomId;
+            const nickname = nicknameInput.value.trim();
+            if (nickname) {
+                socket.emit('joinRoom', { roomId, nickname });
+            } else {
+                alert('ニックネームを入力してください。');
+            }
+        };
+    });
+});
+
+// 部屋が作成されたことを通知
+socket.on('roomCreated', (roomId) => {
+    currentRoomId = roomId;
+    currentRoomIdSpan.textContent = roomId;
+    showSection('game-room-section');
+    alert(`部屋 ${roomId} が作成されました。`);
+    // 部屋リスト更新のため、サーバーにリクエストを送信
+    socket.emit('requestRoomList');
+});
+
+// 部屋に参加したことを通知
+socket.on('roomJoined', (roomId) => {
+    currentRoomId = roomId;
+    currentRoomIdSpan.textContent = roomId;
+    showSection('game-room-section');
+    console.log(`部屋 ${roomId} に参加しました。`);
+});
+
+// 部屋の状態が更新された
+socket.on('roomState', (roomState) => {
+    console.log('--- roomState イベントを受信しました ---');
+    console.log('受信した部屋の状態:', roomState);
+    currentRoomState = roomState; // 最新の部屋の状態を保存
+
+    if (!currentRoomId || currentRoomId !== roomState.id) {
+        // 自分がいる部屋の情報ではない、または部屋IDが設定されていない場合はスキップ
+        return;
+    }
+
+    // UIの更新
+    currentRoomIdSpan.textContent = roomState.id;
+    roomNameDisplay.textContent = `部屋名: ${roomState.name}`; // 部屋名も表示
+    hostNameSpan.textContent = roomState.players[roomState.hostId]?.name || '不明';
+    quizTypeDisplay.textContent = roomState.quizType === 'kokumei' ? '国名' : (roomState.quizType === 'shutomei' ? '首都名' : '未選択');
+
+    // プレイヤーリストの更新
+    playerListEl.innerHTML = '';
+    Object.values(roomState.players).forEach(player => {
+        const playerItem = document.createElement('div');
+        playerItem.className = 'player-item';
+        if (player.isHost) playerItem.classList.add('host');
+        if (player.ready) playerItem.classList.add('ready');
+        playerItem.textContent = `${player.name} (スコア: ${player.score}) ${player.isHost ? '[ホスト]' : ''} ${player.ready ? '[準備OK]' : ''}`;
+        playerListEl.appendChild(playerItem);
+    });
+
+    // ホストコントロールの表示/非表示
+    if (roomState.hostId === myPlayerId && roomState.status === 'waiting') {
+        hostControls.classList.remove('hidden');
+        // 全員が準備完了、かつクイズタイプが選択されていればゲーム開始ボタンを有効化
+        const allPlayersReady = Object.values(roomState.players).every(p => p.ready);
+        startGameBtn.disabled = !allPlayersReady || !roomState.quizType;
+    } else {
+        hostControls.classList.add('hidden');
+    }
+
+    // 準備ボタンの表示/非表示
+    const myPlayer = roomState.players[myPlayerId];
+    if (roomState.status === 'waiting' && myPlayer) {
+        if (myPlayer.ready) {
+            readyBtn.classList.add('hidden');
+            unreadyBtn.classList.remove('hidden');
+        } else {
+            readyBtn.classList.remove('hidden');
+            unreadyBtn.classList.add('hidden');
+        }
+    } else {
+        readyBtn.classList.add('hidden');
+        unreadyBtn.classList.add('hidden');
+    }
+
+    // ゲームエリアの表示/非表示
+    if (roomState.status === 'playing') {
+        gameArea.classList.remove('hidden');
+        submitAnswerBtn.disabled = false; // ゲーム中は解答ボタンを有効化
+        answerEl.value = ''; // 解答欄をクリア
+        correctAnswerInfo.textContent = ''; // 正解情報をクリア
+    } else {
+        gameArea.classList.add('hidden');
+    }
+    
+    // ゲーム終了画面の表示/非表示
+    if (roomState.status === 'finished') {
+        showSection('game-over-section');
+        finalScoresDiv.innerHTML = '<h4>最終スコア</h4>';
+        // スコアを降順でソート
+        const sortedPlayers = Object.values(roomState.players).sort((a, b) => b.score - a.score);
+        sortedPlayers.forEach(player => {
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'score-item';
+            scoreItem.textContent = `${player.name}: ${player.score}点`;
+            finalScoresDiv.appendChild(scoreItem);
+        });
+    } else if (gameOverSection.classList.contains('active-section') && roomState.status === 'waiting') {
+        // ゲーム終了からロビーに戻った場合
+        showSection('game-room-section'); // ゲームルーム画面に戻る
     }
 });
 
+// ゲーム開始イベント
+socket.on('gameStarted', () => {
+    console.log('ゲームが開始されました！');
+    showSection('game-room-section'); // ゲームルーム画面を表示
+    gameArea.classList.remove('hidden');
+});
+
+// 新しい問題が来た
+socket.on('newQuestion', ({ text, questionNumber }) => {
+    console.log(`新しい問題: ${questionNumber}. ${text}`);
+    questionNumberDisplay.textContent = questionNumber;
+    questionText.textContent = text;
+    answerEl.value = ''; // 解答欄をクリア
+    submitAnswerBtn.disabled = false; // 解答ボタンを有効化
+    correctAnswerInfo.textContent = ''; // 正解情報をクリア
+});
+
+// 正解者が出た
+socket.on('correctAnswer', ({ playerId, score, timeTaken }) => {
+    const playerName = currentRoomState.players[playerId]?.name || '不明なプレイヤー';
+    correctAnswerInfo.textContent = `${playerName} が正解しました！ (${timeTaken.toFixed(2)}秒)`;
+    submitAnswerBtn.disabled = true; // 正解が出たら解答ボタンを無効化
+    answerEl.value = ''; // 解答欄をクリアしておく
+    console.log(`正解者: ${playerName}, スコア: ${score}, タイム: ${timeTaken.toFixed(2)}秒`);
+
+    // 必要に応じてプレイヤーリストのスコアを更新（roomStateイベントで更新されるが、即時反映のため）
+    if (currentRoomState && currentRoomState.players[playerId]) {
+        currentRoomState.players[playerId].score = score;
+        // playerListElの更新をトリガーするか、ここでもDOMを直接操作する
+        // 現状、roomStateイベントが送られてくるので、そちらでUIは更新されるはず
+    }
+});
+
+// ゲーム終了イベント
+socket.on('gameOver', ({ correctAnswererId, correctAnswererName, correctAnswererTime, correctAnswer }) => {
+    console.log('ゲーム終了イベントを受信しました。');
+    // 最終問題の情報を表示（必要であれば）
+    if (correctAnswererName) {
+        correctAnswerInfo.textContent = `最終問題の正解は「${correctAnswer}」。正解者: ${correctAnswererName} (${correctAnswererTime.toFixed(2)}秒)`;
+    } else {
+        correctAnswerInfo.textContent = `最終問題の正解は「${correctAnswer}」。正解者はいませんでした。`;
+    }
+    submitAnswerBtn.disabled = true; // ゲーム終了後は解答できないように
+    gameArea.classList.add('hidden'); // ゲームエリアを非表示に
+    // finalScoresDiv の更新は roomState イベントで行われる
+});
+
+// プレイヤーが部屋を退出した
+socket.on('playerLeft', (playerId, playerName) => {
+    console.log(`${playerName} (${playerId}) が部屋を退出しました。`);
+    // roomState イベントが続くので、それでプレイヤーリストは更新される
+    alert(`${playerName}さんが部屋を退出しました。`);
+});
+
+// 新しいホストが割り当てられた
+socket.on('newHost', (newHostId) => {
+    if (newHostId === myPlayerId) {
+        alert('あなたが新しいホストになりました！');
+    }
+    // roomState イベントが続くので、それでUIは更新される
+});
+
+
+// ===== イベントリスナーの設定 =====
+
+// ロビー画面
 createRoomBtn.addEventListener('click', () => {
-    if (!socket) return;
-    socket.emit('createRoom', myName);
-});
-
-setReadyBtn.addEventListener('click', () => {
-    if (!socket || !currentRoomId) return;
-    isReady = !isReady;
-    socket.emit('setReady', currentRoomId, isReady);
-    setReadyBtn.textContent = isReady ? '準備完了 (クリックでキャンセル)' : '準備完了';
-    setReadyBtn.style.backgroundColor = isReady ? 'orange' : '#007bff';
-});
-
-submitAnswerBtn.addEventListener('click', () => {
-    if (!socket || !currentRoomId) return;
-    const answer = answerInput.value.trim();
-    if (answer) {
-        socket.emit('submitAnswer', currentRoomId, answer);
-        answerInput.value = ''; // 入力欄をクリア
-        submitAnswerBtn.disabled = true; // 連打防止
+    const nickname = nicknameInput.value.trim();
+    const roomName = createRoomNameInput.value.trim() || `${nickname}の部屋`; // 部屋名がなければニックネームから生成
+    if (nickname) {
+        socket.emit('createRoom', { roomName, nickname });
+    } else {
+        alert('ニックネームを入力してください。');
     }
+});
+
+// joinRoomBtnのイベントリスナーは、roomListイベント内で動的に設定される参加ボタンとは別
+joinRoomBtn.addEventListener('click', () => {
+    const roomId = joinRoomIdInput.value.trim();
+    const nickname = nicknameInput.value.trim();
+    if (roomId && nickname) {
+        socket.emit('joinRoom', { roomId, nickname });
+    } else {
+        alert('部屋IDとニックネームを入力してください。');
+    }
+});
+
+
+// ゲームルーム画面
+readyBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('setReady', { roomId: currentRoomId, isReady: true });
+});
+
+unreadyBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('setReady', { roomId: currentRoomId, isReady: false });
+});
+
+selectKokumeiBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('selectQuizType', { roomId: currentRoomId, type: 'kokumei' });
+});
+
+selectShutomeiBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('selectQuizType', { roomId: currentRoomId, type: 'shutomei' });
+});
+
+toggleVisibilityBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('toggleRoomVisibility', currentRoomId);
+});
+
+startGameBtn.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('startGame', currentRoomId);
 });
 
 leaveRoomBtn.addEventListener('click', () => {
-    if (!socket || !currentRoomId) return;
-    socket.emit('leaveRoom', currentRoomId);
-    currentRoomId = null;
-    isReady = false;
-    setReadyBtn.textContent = '準備完了';
-    setReadyBtn.style.backgroundColor = '#007bff';
-    showSection('room-list-section');
+    if (currentRoomId) {
+        socket.emit('leaveRoom', currentRoomId);
+        currentRoomId = null; // 部屋IDをリセット
+        showSection('lobby-section'); // ロビー画面に戻る
+    }
 });
 
-backToRoomsBtn.addEventListener('click', () => {
-    showSection('room-list-section');
+submitAnswerBtn.addEventListener('click', () => {
+    if (currentRoomId && answerEl.value.trim()) {
+        socket.emit('submitAnswer', currentRoomId, answerEl.value.trim());
+    }
 });
 
-// --- Socket.IO イベントリスナーの設定 ---
-function setupSocketListeners() {
-    socket.on('connect', () => {
-        console.log('サーバーに接続しました:', socket.id);
-    });
+returnToLobbyBtn.addEventListener('click', () => {
+    if (currentRoomId) {
+        socket.emit('returnToLobby', currentRoomId);
+    }
+    // ロビーに戻る処理は、サーバーからのroomStateイベントで制御される
+    // showSection('lobby-section'); // 即座に戻るならこれでも良いが、サーバーの状態と同期させるのが理想
+});
 
-    socket.on('disconnect', () => {
-        console.log('サーバーから切断されました');
-        alert('サーバーとの接続が切れました。ページをリロードしてください。');
-    });
 
-    socket.on('error', (message) => {
-        alert('エラー: ' + message);
-    });
+// ===== フリックキーボード処理 =====
+const flickData = {
+    あ: ["ウ", "エ", "オ", "イ", "ア"],
+    か: ["ク", "ケ", "コ", "キ", "カ"],
+    さ: ["ス", "セ", "ソ", "シ", "サ"],
+    た: ["ツ", "テ", "ト", "チ", "タ"],
+    な: ["ヌ", "ネ", "ノ", "ニ", "ナ"],
+    は: ["フ", "ヘ", "ホ", "ヒ", "ハ"],
+    ま: ["ム", "メ", "モ", "ミ", "マ"],
+    や: ["ユ", "", "ヨ", "", "ヤ"],
+    ら: ["ル", "レ", "ロ", "リ", "ラ"],
+    わ: ["ン", "ー", "", "ヲ", "ワ"]
+};
 
-    socket.on('roomList', (rooms) => {
-    console.log('--- roomList イベントを受信しました ---');
-    console.log('受信した部屋リスト:', rooms);
-    // ここから既存のロビー画面更新ロジック
-        console.log(`部屋が作成されました: ${roomId}`);
-        currentRoomId = roomId;
-        currentRoomIdSpan.textContent = roomId;
-        showSection('game-room-section');
-        alert(`部屋 ${roomId} が作成されました。`);
-    });
+const transformChainMap = {
+    ツ: ["ツ", "ッ"],
+    ハ: ["ハ", "バ", "パ"],
+    ヒ: ["ヒ", "ビ", "ピ"],
+    フ: ["フ", "ブ", "プ"],
+    ヘ: ["ヘ", "ベ", "ペ"],
+    ホ: ["ホ", "ボ", "ポ"],
+    ア: ["ア", "ァ"],
+    イ: ["イ", "ィ"],
+    ウ: ["ウ", "ゥ"],
+    エ: ["エ", "ェ"],
+    オ: ["オ", "ォ"],
+    カ: ["カ", "ガ"],
+    キ: ["キ", "ギ"],
+    ク: ["ク", "グ"],
+    ケ: ["ケ", "ゲ"],
+    コ: ["コ", "ゴ"],
+    サ: ["サ", "ザ"],
+    シ: ["シ", "ジ"],
+    ス: ["ス", "ズ"],
+    セ: ["セ", "ゼ"],
+    ソ: ["ソ", "ゾ"],
+    タ: ["タ", "ダ"],
+    チ: ["チ", "ヂ"],
+    テ: ["テ", "デ"],
+    ト: ["ト", "ド"],
+    ヤ: ["ヤ", "ャ"],
+    ユ: ["ユ", "ュ"],
+    ヨ: ["ヨ", "ョ"],
+    ワ: ["ワ", "ヮ"]
+};
 
-    socket.on('updateRoomList', (roomsData) => {
-        roomsContainer.innerHTML = '';
-        for (const id in roomsData) {
-            const room = roomsData[id];
-            const roomDiv = document.createElement('div');
-            roomDiv.innerHTML = `
-                <strong>${id}</strong> (${room.status}) - ${Object.keys(room.players).length}人 / ${room.hostId === socket.id ? 'あなた' : room.players[room.hostId]?.name || '不明'}がホスト
-                ${room.status === 'waiting' ? `<button class="join-room-btn" data-room-id="${id}">参加</button>` : ''}
-            `;
-            roomsContainer.appendChild(roomDiv);
+let startX = 0, startY = 0;
+
+const flickGrid = document.getElementById("flick-grid"); // idをflick-gridに統一
+
+function createFlickBtn(base) { // 関数名を変更 (createBtnだと他の要素と紛らわしい)
+    const [up, right, down, left, center] = flickData[base];
+    const btn = document.createElement("button");
+    btn.className = "flick-btn";
+    btn.dataset.base = base;
+    btn.innerHTML = `
+        <span class="hint top">${up || ''}</span>
+        <span class="hint right">${right || ''}</span>
+        <span class="hint bottom">${down || ''}</span>
+        <span class="hint left">${left || ''}</span>
+        <span class="center">${center}</span>
+    `;
+    btn.addEventListener("touchstart", e => {
+        const t = e.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+    });
+    btn.addEventListener("touchend", e => {
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        const th = 30; // しきい値
+        let dir = 4; // 4は中央（フリックなし）
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > th) dir = 1; // 右
+            else if (dx < -th) dir = 3; // 左
+        } else {
+            if (dy > th) dir = 2; // 下
+            else if (dy < -th) dir = 0; // 上
         }
-        document.querySelectorAll('.join-room-btn').forEach(button => {
-            button.onclick = (e) => {
-                const roomId = e.target.dataset.roomId;
-                socket.emit('joinRoom', roomId, myName);
-            };
-        });
+        const kana = flickData[base][dir];
+        if (kana) answerEl.value += kana;
     });
-
-    socket.on('joinedRoom', (roomId, roomData) => {
-        console.log(`部屋 ${roomId} に参加しました`, roomData);
-        currentRoomId = roomId;
-        currentRoomIdSpan.textContent = roomId;
-        updateRoomDisplay(roomData);
-        showSection('game-room-section');
-    });
-
-    socket.on('playerJoined', (playerId, playerInfo) => {
-        console.log(`プレイヤー ${playerInfo.name} が参加しました`);
-        // サーバーから最新の部屋情報が送られてくるはずなので、それを使って更新
-    });
-
-    socket.on('playerRemoved', (playerId) => {
-        console.log(`プレイヤー ${playerId} が退室しました`);
-        // サーバーから最新の部屋情報が送られてくるはずなので、それを使って更新
-    });
-
-    socket.on('hostChanged', (newHostId) => {
-        alert(`ホストが ${newHostId === socket.id ? 'あなた' : newHostId} になりました。`);
-        // ホスト名表示を更新
-    });
-
-    socket.on('playerReadyStatus', (playerId, readyStatus) => {
-        const playerElement = document.getElementById(`player-${playerId}`);
-        if (playerElement) {
-            playerElement.classList.toggle('player-ready', readyStatus);
-            playerElement.classList.toggle('player-not-ready', !readyStatus);
-            // テキストも更新するなど
-        }
-        // 部屋の状態更新（プレイヤーリストなど）
-        socket.emit('getRoomInfo', currentRoomId); // サーバーに部屋情報の更新を要求しても良い
-    });
-
-    socket.on('gameStarting', () => {
-        alert('ゲームが開始されます！');
-        gameArea.style.display = 'block';
-        gameOverArea.style.display = 'none';
-        answerResult.textContent = '';
-        answerInput.focus();
-    });
-
-    socket.on('newQuestion', (questionData) => {
-        questionNumberSpan.textContent = questionData.questionNumber;
-        // totalQuestionsSpan.textContent = ... // サーバーから総問題数も送ってもらう
-        questionText.textContent = questionData.text;
-        answerInput.value = '';
-        answerResult.textContent = '';
-        submitAnswerBtn.disabled = false;
-        answerInput.focus();
-    });
-
-    socket.on('correctAnswer', (solverId, score) => {
-        const solverName = roomsContainer.querySelector(`.player-name[data-player-id="${solverId}"]`)?.textContent || solverId;
-        answerResult.innerHTML = `<span class="correct">${solverName} が正解しました！ スコア: ${score}</span>`;
-        submitAnswerBtn.disabled = true; // 他のプレイヤーは解答終了
-    });
-
-    socket.on('gameOverQuestion', (correctAnswer) => {
-        answerResult.innerHTML += `<br>正解は「${correctAnswer}」でした！`;
-        // 次の質問に移るまでの間、正解を表示
-    });
-
-    socket.on('gameFinished', (finalRoomData) => {
-        gameArea.style.display = 'none';
-        gameOverArea.style.display = 'block';
-        let resultsHtml = '<h4>最終スコア:</h4>';
-        const sortedPlayers = Object.values(finalRoomData.players).sort((a, b) => b.score - a.score);
-        sortedPlayers.forEach(player => {
-            resultsHtml += `<p>${player.name}: ${player.score}点</p>`;
-        });
-        finalResults.innerHTML = resultsHtml;
-        // 部屋の状態を「finished」として部屋リストを更新
-        io.emit('updateRoomList', rooms); // これはサーバー側でemitされるべき
-    });
-
-    // 部屋情報が更新されたらUIを更新する汎用関数 (サーバーから定期的に送るか、特定のイベントで送る)
-    socket.on('updateRoomInfo', (roomData) => {
-        if (roomData.id === currentRoomId) {
-            updateRoomDisplay(roomData);
-        }
-    });
+    btn.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+    return btn;
 }
 
-// 部屋情報を元にプレイヤーリストなどを更新する関数
-function updateRoomDisplay(roomData) {
-    playersList.innerHTML = '';
-    hostNameSpan.textContent = roomData.players[roomData.hostId]?.name || roomData.hostId;
-    totalQuestionsSpan.textContent = roomData.totalQuestions; // サーバーから総問題数を渡す
-    for (const playerId in roomData.players) {
-        const player = roomData.players[playerId];
-        const li = document.createElement('li');
-        li.id = `player-${playerId}`;
-        li.classList.add(player.isReady ? 'player-ready' : 'player-not-ready');
-        li.innerHTML = `<span class="player-name" data-player-id="${playerId}">${player.name}</span>: ${player.score}点 (${player.isReady ? '準備OK' : '未準備'})`;
-        playersList.appendChild(li);
+// 「わ」行以外のフリックボタンを生成
+Object.keys(flickData).forEach(base => {
+    if (base !== "わ") { // 「わ」はHTMLに直接記述されている、または個別に処理するため除外
+        flickGrid.appendChild(createFlickBtn(base));
     }
-    // ホストが自分なら準備ボタンを表示
-    setReadyBtn.style.display = (socket.id in roomData.players) ? 'inline-block' : 'none'; // 自分が参加者なら
-    // 部屋のステータスに基づいてUIを調整
-    if (roomData.status === 'playing') {
-        gameArea.style.display = 'block';
-    } else if (roomData.status === 'finished') {
-        gameOverArea.style.display = 'block';
-    }
+});
+
+// 「わ」行ボタンのイベントリスナーはHTMLに直接記述した要素に対して別途設定
+// HTMLに直接書かれた「わ」ボタンを取得してイベントリスナーを追加
+const waBtn = document.querySelector('.flick-btn[data-base="わ"]'); // data-base属性で取得
+if (waBtn) { // 要素が存在することを確認
+    waBtn.addEventListener("touchstart", e => {
+        const t = e.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+    });
+    waBtn.addEventListener("touchend", e => {
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        const th = 30;
+        let dir = 4;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > th) dir = 1;
+            else if (dx < -th) dir = 3;
+        } else {
+            if (dy > th) dir = 2;
+            else if (dy < -th) dir = 0;
+        }
+        const kana = flickData["わ"][dir];
+        if (kana) answerEl.value += kana;
+    });
+    waBtn.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
 }
 
-// 初期表示
-showSection('login-section');
+document.getElementById("clear-btn").addEventListener("click", () => {
+    answerEl.value = answerEl.value.slice(0, -1);
+});
+
+document.getElementById("modify-btn").addEventListener("click", () => {
+    const val = answerEl.value;
+    if (!val) return;
+    const last = val.slice(-1);
+    const rest = val.slice(0, -1);
+    // transformChainMapに直接存在するか、値として存在するかをチェック
+    const chain = transformChainMap[last] || Object.entries(transformChainMap).find(([, arr]) => arr.includes(last))?.[1];
+    if (!chain) return;
+    const idx = chain.indexOf(last);
+    const next = chain[(idx + 1) % chain.length];
+    answerEl.value = rest + next;
+});
+
+// 解答入力欄への直接入力を防止
+answerEl.addEventListener("keydown", e => e.preventDefault());
+answerEl.addEventListener("beforeinput", e => e.preventDefault());
