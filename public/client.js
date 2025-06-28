@@ -52,6 +52,17 @@ function showSection(sectionId) {
     });
     document.getElementById(sectionId).classList.remove('hidden-section');
     document.getElementById(sectionId).classList.add('active-section');
+
+    // 画面が切り替わったときに、特定の要素を初期状態に戻す
+    if (sectionId === 'game-room-section') {
+        // ゲームルームに入った時にゲームエリアは非表示にする
+        gameArea.classList.add('hidden');
+        // ゲーム終了画面から戻った場合のために隠す
+        gameOverSection.classList.add('hidden-section');
+    } else if (sectionId === 'lobby-section') {
+        // ロビーに戻った時にゲームルーム関連の要素も隠す
+        gameRoomSection.classList.add('hidden-section');
+    }
 }
 
 // ===== 初期化処理 =====
@@ -142,7 +153,12 @@ socket.on('roomState', (roomState) => {
         return;
     }
 
-    // UIの更新
+    // 部屋に入った時に必ずgame-room-sectionを表示
+    // （showSection('game-room-section')はroomCreated/roomJoinedで行われるが、念のため）
+    showSection('game-room-section');
+
+
+    // UIの更新 (部屋の共通情報)
     currentRoomIdSpan.textContent = roomState.id;
     roomNameDisplay.textContent = `部屋名: ${roomState.name}`; // 部屋名も表示
     hostNameSpan.textContent = roomState.players[roomState.hostId]?.name || '不明';
@@ -159,46 +175,63 @@ socket.on('roomState', (roomState) => {
         playerListEl.appendChild(playerItem);
     });
 
-    // ホストコントロールの表示/非表示
-    if (roomState.hostId === myPlayerId && roomState.status === 'waiting') {
-        hostControls.classList.remove('hidden');
-        // 全員が準備完了、かつクイズタイプが選択されていればゲーム開始ボタンを有効化
-        const allPlayersReady = Object.values(roomState.players).every(p => p.ready);
-        startGameBtn.disabled = !allPlayersReady || !roomState.quizType;
-    } else {
-        hostControls.classList.add('hidden');
-    }
+    // ===== 部屋のステータスに応じたUI制御 =====
 
-    // 準備ボタンの表示/非表示
-    const myPlayer = roomState.players[myPlayerId];
-    if (roomState.status === 'waiting' && myPlayer) {
-        if (myPlayer.ready) {
-            readyBtn.classList.add('hidden');
-            unreadyBtn.classList.remove('hidden');
-        } else {
-            readyBtn.classList.remove('hidden');
-            unreadyBtn.classList.add('hidden');
+    // 1. 待機中 (waiting) の場合
+    if (roomState.status === 'waiting') {
+        hostControls.classList.remove('hidden'); // ホストコントロールを一度表示（後に非ホストなら隠す）
+        // 準備ボタンを表示
+        readyBtn.classList.remove('hidden');
+        unreadyBtn.classList.add('hidden'); // 初期状態では解除ボタンは隠す
+
+        const myPlayer = roomState.players[myPlayerId];
+        if (myPlayer) {
+            // 自分の準備状態によってボタンを切り替え
+            if (myPlayer.ready) {
+                readyBtn.classList.add('hidden');
+                unreadyBtn.classList.remove('hidden');
+            } else {
+                readyBtn.classList.remove('hidden');
+                unreadyBtn.classList.add('hidden');
+            }
+
+            // ホストの場合のみホストコントロールを表示
+            if (roomState.hostId === myPlayerId) {
+                hostControls.classList.remove('hidden');
+                const allPlayersReady = Object.values(roomState.players).every(p => p.ready);
+                startGameBtn.disabled = !allPlayersReady || !roomState.quizType;
+            } else {
+                hostControls.classList.add('hidden'); // ホストでなければ隠す
+            }
+        } else { // 部屋にいない場合（ありえないが念のため）
+             hostControls.classList.add('hidden');
+             readyBtn.classList.add('hidden');
+             unreadyBtn.classList.add('hidden');
         }
-    } else {
-        readyBtn.classList.add('hidden');
-        unreadyBtn.classList.add('hidden');
-    }
 
-    // ゲームエリアの表示/非表示
-    if (roomState.status === 'playing') {
-        gameArea.classList.remove('hidden');
-        submitAnswerBtn.disabled = false; // ゲーム中は解答ボタンを有効化
+        gameArea.classList.add('hidden'); // ゲームエリアは隠す
+        gameOverSection.classList.add('hidden-section'); // ゲーム終了画面は隠す
+    }
+    // 2. プレイ中 (playing) の場合
+    else if (roomState.status === 'playing') {
+        hostControls.classList.add('hidden'); // ホストコントロールは隠す
+        readyBtn.classList.add('hidden'); // 準備ボタンは隠す
+        unreadyBtn.classList.add('hidden'); // 準備解除ボタンは隠す
+        gameArea.classList.remove('hidden'); // ゲームエリアを表示
+        gameOverSection.classList.add('hidden-section'); // ゲーム終了画面は隠す
+        submitAnswerBtn.disabled = false; // 解答ボタンを有効化 (ゲーム開始時も)
         answerEl.value = ''; // 解答欄をクリア
         correctAnswerInfo.textContent = ''; // 正解情報をクリア
-    } else {
-        gameArea.classList.add('hidden');
     }
-    
-    // ゲーム終了画面の表示/非表示
-    if (roomState.status === 'finished') {
-        showSection('game-over-section');
+    // 3. 終了 (finished) の場合
+    else if (roomState.status === 'finished') {
+        hostControls.classList.add('hidden'); // ホストコントロールは隠す
+        readyBtn.classList.add('hidden'); // 準備ボタンは隠す
+        unreadyBtn.classList.add('hidden'); // 準備解除ボタンは隠す
+        gameArea.classList.add('hidden'); // ゲームエリアは隠す
+        showSection('game-over-section'); // ゲーム終了画面を表示
+
         finalScoresDiv.innerHTML = '<h4>最終スコア</h4>';
-        // スコアを降順でソート
         const sortedPlayers = Object.values(roomState.players).sort((a, b) => b.score - a.score);
         sortedPlayers.forEach(player => {
             const scoreItem = document.createElement('div');
@@ -206,9 +239,13 @@ socket.on('roomState', (roomState) => {
             scoreItem.textContent = `${player.name}: ${player.score}点`;
             finalScoresDiv.appendChild(scoreItem);
         });
-    } else if (gameOverSection.classList.contains('active-section') && roomState.status === 'waiting') {
-        // ゲーム終了からロビーに戻った場合
-        showSection('game-room-section'); // ゲームルーム画面に戻る
+
+        // ホストのみ「ロビーに戻る」ボタンを表示
+        if (roomState.hostId === myPlayerId) {
+            returnToLobbyBtn.classList.remove('hidden');
+        } else {
+            returnToLobbyBtn.classList.add('hidden');
+        }
     }
 });
 
@@ -343,8 +380,7 @@ returnToLobbyBtn.addEventListener('click', () => {
     if (currentRoomId) {
         socket.emit('returnToLobby', currentRoomId);
     }
-    // ロビーに戻る処理は、サーバーからのroomStateイベントで制御される
-    // showSection('lobby-section'); // 即座に戻るならこれでも良いが、サーバーの状態と同期させるのが理想
+    // サーバーからのroomStateイベントでUIが自動的に切り替わることを期待
 });
 
 
