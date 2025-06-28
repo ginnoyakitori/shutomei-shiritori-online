@@ -112,7 +112,10 @@ function setupSocketListeners() {
         alert('エラー: ' + message);
     });
 
-    socket.on('roomCreated', (roomId) => {
+    socket.on('roomList', (rooms) => {
+    console.log('--- roomList イベントを受信しました ---');
+    console.log('受信した部屋リスト:', rooms);
+    // ここから既存のロビー画面更新ロジック
         console.log(`部屋が作成されました: ${roomId}`);
         currentRoomId = roomId;
         currentRoomIdSpan.textContent = roomId;
