@@ -22,28 +22,6 @@ const PORT = process.env.PORT || 3000; // RenderがPORT環境変数を提供
 app.use(express.static('public'));
 
 // ゲームの状態を保持するオブジェクト
-// 例:
-// {
-//   "roomId123": {
-//     id: "roomId123",
-//     name: "Room A",
-//     password: "pass", // パスワードなしの場合はnull
-//     status: "waiting", // "waiting", "playing", "finished"
-//     hostId: "socketId1",
-//     quizType: "kokumei", // "kokumei" or "shutomei"
-//     isVisible: true, // 部屋リストに表示するかどうか
-//     players: {
-//       "socketId1": { name: "Player1", score: 0, ready: false, isHost: true },
-//       "socketId2": { name: "Player2", score: 0, ready: false, isHost: false }
-//     },
-//     questions: [], // この部屋で使うクイズ問題の配列
-//     currentQuestionIndex: 0, // 現在の問題のインデックス
-//     currentQuestion: { text: "日本の首都は？", answer: "東京", questionNumber: 1 },
-//     correctAnswerer: null, // 現在の問題の正解者ID
-//     correctAnswererTime: null, // 現在の問題の正解タイム
-//     questionStartTime: null // 現在の問題が始まった時刻
-//   }
-// }
 const rooms = {};
 
 // クイズデータ
@@ -239,6 +217,7 @@ io.on('connection', (socket) => {
     // ゲーム開始
     socket.on('startGame', (roomId) => {
         const room = rooms[roomId];
+        // ④ 一人でもクイズを開始できるように変更
         if (room && room.hostId === socket.id && room.status === 'waiting' && room.quizType && Object.keys(room.players).length >= 1 && Object.values(room.players).every(p => p.ready)) {
             room.status = 'playing';
             room.currentQuestionIndex = 0;

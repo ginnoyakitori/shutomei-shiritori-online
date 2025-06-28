@@ -62,6 +62,7 @@ function showSection(sectionId) {
     } else if (sectionId === 'lobby-section') {
         // ロビーに戻った時にゲームルーム関連の要素も隠す
         gameRoomSection.classList.add('hidden-section');
+        gameOverSection.classList.add('hidden-section'); // ロビーに戻ったらゲームオーバー画面も隠す
     }
 }
 
@@ -154,7 +155,6 @@ socket.on('roomState', (roomState) => {
     }
 
     // 部屋に入った時に必ずgame-room-sectionを表示
-    // （showSection('game-room-section')はroomCreated/roomJoinedで行われるが、念のため）
     showSection('game-room-section');
 
 
@@ -179,7 +179,6 @@ socket.on('roomState', (roomState) => {
 
     // 1. 待機中 (waiting) の場合
     if (roomState.status === 'waiting') {
-        hostControls.classList.remove('hidden'); // ホストコントロールを一度表示（後に非ホストなら隠す）
         // 準備ボタンを表示
         readyBtn.classList.remove('hidden');
         unreadyBtn.classList.add('hidden'); // 初期状態では解除ボタンは隠す
@@ -198,8 +197,9 @@ socket.on('roomState', (roomState) => {
             // ホストの場合のみホストコントロールを表示
             if (roomState.hostId === myPlayerId) {
                 hostControls.classList.remove('hidden');
-                const allPlayersReady = Object.values(roomState.players).every(p => p.ready);
-                startGameBtn.disabled = !allPlayersReady || !roomState.quizType;
+                // プレイヤーが1人でも準備できていて、かつクイズタイプが選択されていれば開始可能
+                const atLeastOnePlayerReady = Object.values(roomState.players).some(p => p.ready);
+                startGameBtn.disabled = !atLeastOnePlayerReady || !roomState.quizType;
             } else {
                 hostControls.classList.add('hidden'); // ホストでなければ隠す
             }
@@ -432,9 +432,9 @@ const transformChainMap = {
 
 let startX = 0, startY = 0;
 
-const flickGrid = document.getElementById("flick-grid"); // idをflick-gridに統一
+const flickGrid = document.getElementById("flick-grid");
 
-function createFlickBtn(base) { // 関数名を変更 (createBtnだと他の要素と紛らわしい)
+function createFlickBtn(base) {
     const [up, right, down, left, center] = flickData[base];
     const btn = document.createElement("button");
     btn.className = "flick-btn";
@@ -474,15 +474,14 @@ function createFlickBtn(base) { // 関数名を変更 (createBtnだと他の要�
 
 // 「わ」行以外のフリックボタンを生成
 Object.keys(flickData).forEach(base => {
-    if (base !== "わ") { // 「わ」はHTMLに直接記述されている、または個別に処理するため除外
+    if (base !== "わ") {
         flickGrid.appendChild(createFlickBtn(base));
     }
 });
 
 // 「わ」行ボタンのイベントリスナーはHTMLに直接記述した要素に対して別途設定
-// HTMLに直接書かれた「わ」ボタンを取得してイベントリスナーを追加
-const waBtn = document.querySelector('.flick-btn[data-base="わ"]'); // data-base属性で取得
-if (waBtn) { // 要素が存在することを確認
+const waBtn = document.querySelector('.flick-btn[data-base="わ"]');
+if (waBtn) {
     waBtn.addEventListener("touchstart", e => {
         const t = e.touches[0];
         startX = t.clientX;
@@ -516,7 +515,6 @@ document.getElementById("modify-btn").addEventListener("click", () => {
     if (!val) return;
     const last = val.slice(-1);
     const rest = val.slice(0, -1);
-    // transformChainMapに直接存在するか、値として存在するかをチェック
     const chain = transformChainMap[last] || Object.entries(transformChainMap).find(([, arr]) => arr.includes(last))?.[1];
     if (!chain) return;
     const idx = chain.indexOf(last);

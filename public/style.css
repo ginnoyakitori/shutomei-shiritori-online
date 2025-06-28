@@ -26,35 +26,95 @@ section {
     margin-bottom: 20px;
 }
 
-input[type="text"], button {
+input[type="text"] { /* ボタンと分離 */
     padding: 10px;
     margin: 5px;
     border-radius: 4px;
     border: 1px solid #ddd;
 }
 
+/* ③ ボタンの基本スタイル */
 button {
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 4px;
     border: none;
-    transition: background-color 0.3s ease;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    font-weight: bold;
 }
 
 button:hover:not(:disabled) {
-    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 button:disabled {
-    background-color: #cccccc;
+    background-color: #cccccc !important; /* !important で優先 */
+    color: #666666 !important;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ③ プライマリボタン */
+.primary-btn {
+    background-color: #007bff;
+    color: white;
+}
+.primary-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+/* ③ アクションボタン (クイズタイプ選択など) */
+.action-btn {
+    background-color: #28a745; /* Green */
+    color: white;
+}
+.action-btn:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+/* ③ セカンダリボタン (表示/非表示、消去、濁点など) */
+.secondary-btn {
+    background-color: #6c757d; /* Gray */
+    color: white;
+}
+.secondary-btn:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+/* ③ 危険なアクションボタン (部屋を退出など) */
+.danger-btn {
+    background-color: #dc3545; /* Red */
+    color: white;
+}
+.danger-btn:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+/* ③ コントロールグループのレイアウト */
+.control-group {
+    display: flex;
+    flex-wrap: wrap; /* ボタンが複数行になる場合に対応 */
+    justify-content: center;
+    gap: 5px; /* ボタン間の隙間 */
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee;
 }
 
 .hidden {
     display: none;
 }
 
-.active-section {
+.hidden-section { /* ①, ② セクションの表示/非表示 */
+    display: none;
+}
+
+.active-section { /* ①, ② セクションの表示/非表示 */
     display: block;
 }
 
@@ -207,11 +267,7 @@ button:disabled {
 
 .flick-controls button {
     width: 80px;
-    background-color: #6c757d;
-}
-
-.flick-controls button:hover:not(:disabled) {
-    background-color: #5a6268;
+    /* ここは.secondary-btnで上書きされる */
 }
 
 /* ゲーム終了画面 */

@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クイズ早押し！</title>
-    <link rel="stylesheet" href="style.css">
+    <title>国名しりとり</title> <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="container">
-        <h1>クイズ早押し！</h1>
-
-        <section id="lobby-section" class="active-section">
-            <h2>部屋一覧</h2>
+        <h1>国名しりとり</h1> <section id="lobby-section" class="active-section"> <h2>部屋一覧</h2>
             <div id="room-list">
                 <p>部屋がありません。部屋を作成してください。</p>
             </div>
             <div class="lobby-controls">
                 <input type="text" id="nickname-input" placeholder="ニックネームを入力">
                 <input type="text" id="create-room-name-input" placeholder="部屋名を入力 (任意)">
-                <button id="create-room-btn">部屋を作成</button>
-                <input type="text" id="join-room-id-input" placeholder="部屋IDを入力">
-                <button id="join-room-btn">部屋に参加</button>
-            </div>
+                <button id="create-room-btn" class="primary-btn">部屋を作成</button> <input type="text" id="join-room-id-input" placeholder="部屋IDを入力">
+                <button id="join-room-btn" class="primary-btn">部屋に参加</button> </div>
         </section>
 
-        <section id="game-room-section" class="hidden-section">
-            <h2 id="room-name-display">部屋名: <span id="current-room-id-span"></span></h2>
+        <section id="game-room-section" class="hidden-section"> <h2 id="room-name-display">部屋名: <span id="current-room-id-span"></span></h2>
             <p>ホスト: <span id="host-name"></span></p>
             <p>クイズタイプ: <span id="quiz-type-display">未選択</span></p>
 
@@ -33,27 +26,16 @@
             <div id="player-list">
                 </div>
 
-            <div id="host-controls" class="hidden">
-                <p>クイズタイプを選択:</p>
-                <button id="select-kokumei-btn">国名</button>
-                <button id="select-shutomei-btn">首都名</button>
-                <button id="toggle-visibility-btn">部屋の表示/非表示</button>
-                <button id="start-game-btn" disabled>ゲーム開始</button>
-            </div>
+            <div id="host-controls" class="control-group"> <p>クイズタイプを選択:</p>
+                <button id="select-kokumei-btn" class="action-btn">国名</button> <button id="select-shutomei-btn" class="action-btn">首都名</button> <button id="toggle-visibility-btn" class="secondary-btn">部屋の表示/非表示</button> <button id="start-game-btn" class="primary-btn" disabled>ゲーム開始</button> </div>
 
-            <div id="player-controls">
-                <button id="ready-btn">準備完了</button>
-                <button id="unready-btn" class="hidden">準備解除</button>
-                <button id="leave-room-btn">部屋を退出</button>
-            </div>
+            <div id="player-controls" class="control-group"> <button id="ready-btn" class="primary-btn">準備完了</button> <button id="unready-btn" class="primary-btn hidden">準備解除</button> <button id="leave-room-btn" class="danger-btn">部屋を退出</button> </div>
 
             <div id="game-area" class="hidden">
                 <h3>問題 <span id="question-number-display"></span></h3>
                 <p id="question-text"></p>
                 <input type="text" id="answer-input" placeholder="解答を入力" readonly>
-                <button id="submit-answer-btn">解答</button>
-
-                <div id="flick-keyboard">
+                <button id="submit-answer-btn" class="primary-btn">解答</button> <div id="flick-keyboard">
                     <div id="flick-grid">
                         <button class="flick-btn" data-base="わ">
                             <span class="hint top">ン</span>
@@ -64,9 +46,7 @@
                         </button>
                     </div>
                     <div class="flick-controls">
-                        <button id="clear-btn">消</button>
-                        <button id="modify-btn">濁/小</button>
-                    </div>
+                        <button id="clear-btn" class="secondary-btn">消</button> <button id="modify-btn" class="secondary-btn">濁/小</button> </div>
                 </div>
 
                 <div id="result-display">
@@ -74,15 +54,15 @@
                 </div>
             </div>
 
-            <div id="game-over-section" class="hidden">
+            <div id="game-over-section" class="hidden-section">
                 <h3>ゲーム終了！</h3>
                 <p>最終結果:</p>
                 <div id="final-scores"></div>
-                <button id="return-to-lobby-btn">ロビーに戻る</button>
-            </div>
+                <button id="return-to-lobby-btn" class="primary-btn">ロビーに戻る</button> </div>
         </section>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="client.js"></script> </body>
+    <script src="client.js"></script>
+</body>
 </html>
