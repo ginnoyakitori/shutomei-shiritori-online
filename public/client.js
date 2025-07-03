@@ -456,12 +456,13 @@ function createAndAttachFlickBtn(base) {
             }
         }
 
-       if (kana) {
-    answerEl.value += kana;
-    // 追記: 入力のたびにスクロールを右端に
-    answerEl.scrollLeft = answerEl.scrollWidth;
-}
-    };
+   
+    const kana = flickData[base][dir];  // ← これが必要
+    if (kana) {
+        answerEl.value += kana;
+        answerEl.scrollLeft = answerEl.scrollWidth;
+    }
+};
     const touchMoveHandler = e => e.preventDefault(); // スクロール防止
 
     // イベントハンドラをボタンのプロパティに保存しておき、enable/disableで参照できるようにする
