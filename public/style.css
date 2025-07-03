@@ -399,13 +399,16 @@ h2.section-title {
     width: 90%;
     padding: 0px;
     margin-bottom: 0px;
-    border: 2px solid #ccc; /* 元に戻す */
+    border: 2px solid #ccc;
     border-radius: 6px;
     background: #f9f9f9;
     display: block;
     margin: 0 auto;
-    color: black; /* 解答の文字色を黒に指定 */
-    text-align: left; /* ★ここが左詰めの設定 */
+    color: black;
+    text-align: left;
+    overflow-x: auto;/* ★ここを追加: 横スクロールを可能にする★ */
+    white-space: nowrap; /* ★ここを追加: テキストを改行しない★ */
+    text-overflow: clip; /* ★ここを追加: はみ出たテキストはクリップする★ */
 }
 
 #feedback {
