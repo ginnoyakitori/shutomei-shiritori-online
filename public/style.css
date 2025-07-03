@@ -660,7 +660,7 @@ h2.section-title {
 /* ラジオボタンのラベルをボタンとしてスタイリング */
 .player-settings label {
     display: inline-block;
-    margin: 0 15px;
+    margin: 15px;
     cursor: pointer;
     font-size: 1.1em;
     padding: 10px 20px;
@@ -733,51 +733,4 @@ h2.section-title {
 #start-btn:disabled {
     background-color: #cccccc !important;
     cursor: not-allowed;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 600px) {
-    .container {
-        padding: 20px;
-    }
-
-    h1#main-title {
-        font-size: 1.8em;
-    }
-
-    /* レスポンシブ対応でのフリックグリッドとコントロール行の調整 */
-    #flick-grid {
-        grid-template-columns: repeat(3, 63px);
-        grid-template-rows: repeat(4, 63px);
-        gap: 8px;
-    }
-
-    .flick-btn {
-        width: 63px;
-        height: 63px;
-        max-width: 63px;
-        max-height: 63px;
-        font-size: 1.5em;
-    }
-
-    #control-row {
-        gap: 8px;
-        margin-top: 8px;
-        transform: translateY(-63px);
-        width: calc(3 * 63px + 2 * 8px);
-        max-width: calc(3 * 63px + 2 * 8px);
-        margin-left: auto;
-        margin-right: auto;
-    }
-    #modify-btn, #clear-btn {
-        width: 63px;
-        height: 63px;
-        font-size: 1.2em;
-        border-radius: 8px;
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    }
-    /* 「ワ」ボタンのスマホ対応 */
-    .flick-btn[data-base="わ"] {
-        margin-left: 30px;
-    }
 }
