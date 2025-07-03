@@ -136,7 +136,7 @@ const romajiToKanaMap = {
     "ga": "ガ", "gi": "ギ", "gu": "グ", "ge": "ゲ", "go": "ゴ",
     "za": "ザ", "ji": "ジ", "zi": "ジ", "zu": "ズ", "ze": "ゼ", "zo": "ゾ",
     "da": "ダ", "di": "ヂ", "du": "ヅ", "de": "デ", "do": "ド",
-    "ba": "バ", "bi": "ビ", "bu": "ブ", "be": "ベ", "bo": "ポ", // baの変換に誤りがあったため修正
+    "ba": "バ", "bi": "ビ", "bu": "ブ", "be": "ベ", "bo": "ボ", // baの変換に誤りがあったため修正
     "pa": "パ", "pi": "ピ", "pu": "プ", "pe": "ペ", "po": "ポ",
     "ltu": "ッ", "xtu": "ッ",
     "nn": "ン", // nn は ン に変換
@@ -544,8 +544,7 @@ function disablePhysicalInput() {
 
 /**
  * フリック入力を有効にする
- */// enableFlickInput 関数内 (修正後)
-function enableFlickInput() {
+ */function enableFlickInput() {
     flickGrid.style.display = "grid";
     controlRow.style.display = "flex"; // controlRow を flex コンテナにする
     submitBtn.style.display = "block";
@@ -728,12 +727,15 @@ startGameBtn.addEventListener('click', () => {
 
 // 入力方法ラジオボタンの変更イベントリスナー
 myInputMethodRadios.forEach(radio => {
-    radio.addEventListener('change', (event) => {
-        mySelectedInputMethod = event.target.value;
-        socket.emit('setPlayerInputMethod', { roomId: currentRoomId, method: mySelectedInputMethod });
-        console.log(`My input method set to: ${mySelectedInputMethod}`);
-        toggleInputMethodUI(mySelectedInputMethod); // UIを更新
+  radio.addEventListener('change', (event) => {
+    mySelectedInputMethod = event.target.value;
+    socket.emit('setPlayerInputMethod', {
+      roomId: currentRoomId,
+      method: mySelectedInputMethod
     });
+    console.log(`My input method set to: ${mySelectedInputMethod}`);
+    toggleInputMethodUI(mySelectedInputMethod); // 入力UIをフリック/キーボードに切り替え
+  });
 });
 
 /**
@@ -818,6 +820,19 @@ socket.on('disconnect', () => {
     mainTitle.style.display = 'block';
 });
 
+socket.on('quizModeSelected', (mode) => {
+    const quizModeDisplay = document.getElementById('quiz-mode-display');
+    let modeText = '';
+    if (mode === 'kokumei') {
+        modeText = '国名しりとり';
+    } else if (mode === 'shutomei') {
+        modeText = '首都名しりとり';
+    } else {
+        modeText = '未選択';
+    }
+    quizModeDisplay.textContent = `しりとりの種類: ${modeText}`;
+});
+
 // 部屋リスト更新時
 socket.on('roomList', (roomsData) => {
     console.log('--- roomList イベントを受信しました');
@@ -849,7 +864,7 @@ socket.on('roomList', (roomsData) => {
 
         li.innerHTML = `
             <div class="room-info">
-                <span class="room-name">部屋名: ${room.name}</span>${isGameInProgressText}<br>
+                <span class="room-name"> ${room.name}</span>${isGameInProgressText}<br>
                 <span class="room-host">ホスト: ${hostName}</span><br>
                 <span class="room-players">参加者: ${playerCount}人 (${playerNames})</span>
             </div>
@@ -939,14 +954,22 @@ socket.on('roomError', (message) => {
     }
 });
 
-// 部屋の状態更新時
 socket.on('roomStateUpdate', (room) => {
     console.log('Room state updated:', room);
+    isHost = room.hostId === socket.id;
+
+    // ★★★ ここから追加 ★★★
+    // 自分のプレイヤー情報を見つけ、isReadyの状態をグローバル変数に同期する
+    const myPlayer = room.players.find(p => p.id === socket.id);
+    if (myPlayer) {
+        isReady = myPlayer.isReady; // グローバル変数 isReady を更新
+    }
+    // ★★★ ここまで追加 ★★★
+
     playersInRoomList.innerHTML = '<h3>参加プレイヤー:</h3><ul></ul>';
     const ul = playersInRoomList.querySelector('ul');
     room.players.forEach(player => {
         const li = document.createElement('li');
-        // スコアを勝ち数 (wins) として表示
         li.innerHTML = `
             <div class="player-info">
                 <span class="player-name">${player.nickname}</span>
@@ -954,46 +977,61 @@ socket.on('roomStateUpdate', (room) => {
                     ${player.isHost ? 'ホスト' : (player.isReady ? '準備OK' : '未準備')}
                 </span>
             </div>
-            <span class="player-score">勝利数: ${player.wins || 0}</span>
+            <span class="player-score">勝ち数: ${player.wins || 0}</span>
             <span class="player-input-method">入力: ${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
         `;
         ul.appendChild(li);
     });
-
     if (isHost) {
         hostControls.style.display = 'block';
         lobbyRoomName.textContent = `部屋: ${room.name} (ホスト)`;
         lobbyRoomId.textContent = room.id;
-        const allReady = room.players.length > 0 && room.players.every(p => p.isReady || p.isHost);
-        startGameBtn.disabled = !allReady || !room.quizFile;
-        toggleVisibilityBtn.textContent = room.isVisible ? '部屋を非表示にする' : '部屋を公開する';
-        setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
+
+        // ホストになった場合、部屋の現在のクイズ設定をクライアント側の変数に同期する
+        selectedQuizSet = room.quizSet;
+        selectedQuizTitle = room.quizTitle;
+
+        // ★★★ ここから追加・修正 ★★★
+        // クイズタイプ選択ボタンを有効にする
+        selectKokumeiBtn.disabled = false;
+        selectShutomeiBtn.disabled = false;
+        // ★★★ ここまで追加・修正 ★★★
+
         selectKokumeiBtn.classList.remove('selected');
         selectShutomeiBtn.classList.remove('selected');
+
         if (room.quizFile === 'kokumei.csv') {
             selectKokumeiBtn.classList.add('selected');
-            selectedQuizTitle = '国名しりとり';
-            selectedQuizSet = 'kokumei';
         } else if (room.quizFile === 'shutomei.csv') {
             selectShutomeiBtn.classList.add('selected');
-            selectedQuizTitle = '首都名しりとり';
-            selectedQuizSet = 'shutomei';
         }
-        selectedQuizDisplay.textContent = room.quizFile ? `選択中のクイズ: ${selectedQuizTitle}` : 'クイズ未選択';
-        playerInputMethodSelection.style.display = 'block'; // ホストの場合も入力方法選択は表示
-    } else {
+        selectedQuizDisplay.textContent = room.quizFile ? `選択中のクイズ: ${room.quizTitle}` : 'クイズ未選択';
+
+        const allReady = room.players.length > 0 && room.players.every(p => p.isReady || p.isHost);
+        // ゲーム開始ボタンのdisabled状態を更新（room.quizFileが設定されていればdisabled解除されるはず）
+        startGameBtn.disabled = !allReady || !room.quizFile;
+
+        toggleVisibilityBtn.textContent = room.isVisible ? '部屋を非表示にする' : '部屋を公開する';
+       setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
+    } else { // ホストではない場合
         hostControls.style.display = 'none';
         lobbyRoomName.textContent = `部屋: ${room.name}`;
         lobbyRoomId.textContent = room.id;
+
+        // ★★★ ここから修正 ★★★
+        // isReady グローバル変数が更新されたので、それに従ってボタンの表示を更新
         setReadyBtn.textContent = isReady ? '準備OK！ (解除)' : '準備完了';
         setReadyBtn.classList.toggle('ready', isReady);
+        // ★★★ ここまで修正 ★★★
+
         setReadyBtn.style.display = 'inline-block'; // 参加者は準備ボタンを表示
         selectedQuizDisplay.textContent = room.quizFile ? `${room.quizTitle}` : 'クイズ未選択';
-        playerInputMethodSelection.style.display = 'block'; // 参加者の場合も入力方法選択は表示
+        playerInputMethodSelection.style.display = 'block';
+
+        selectKokumeiBtn.disabled = true;
+        selectShutomeiBtn.disabled = true;
     }
 });
-
-
 // ===============================================
 // === ゲーム進行ロジック ===
 // ===============================================
@@ -1124,7 +1162,6 @@ socket.on('gameFinished', (data) => {
     // その問題の解答を表示
     if (questions.length > 0) {
         const questionAnswerHeader = document.createElement('h3');
-    
         finalScoresList.appendChild(questionAnswerHeader);
         const questionItem = document.createElement('p');
         questionItem.innerHTML = `問題: ${questions[0].q}<br>解答: ${questions[0].a}`;
