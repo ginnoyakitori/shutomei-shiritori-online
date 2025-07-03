@@ -34,9 +34,10 @@
   <div id="room-lobby" class="container" style="display:none;">
     <h2 id="lobby-room-name"></h2>
     <p>部屋ID: <span id="lobby-room-id"></span></p>
-  <p id="quiz-mode-display">しりとり未選択</p>
+  
+      <p id="selected-quiz-display">クイズ未選択</p>
+
     <div id="players-in-room" class="players-list">
-      <h3>参加プレイヤー:</h3>
       <ul></ul>
     </div>
 <div class="player-settings" id="playerInputMethodSelection">
@@ -53,8 +54,6 @@
         <button id="select-kokumei" class="button quiz-select-button">国名しりとり</button>
         <button id="select-shutomei" class="button quiz-select-button">首都名しりとり</button>
       </div>
-      <p id="selected-quiz-display">クイズ未選択</p>
-
       <button id="toggle-visibility-btn" class="button secondary-button">部屋を非表示にする</button>
       <button id="start-game-btn" class="button primary-button" disabled>ゲーム開始</button>
     </div>

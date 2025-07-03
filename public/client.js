@@ -706,7 +706,7 @@ function selectQuizType(type) {
     }
     selectedQuizSet = setName;
     selectedQuizTitle = displayName;
-    selectedQuizDisplay.textContent = `選択中のクイズ: ${displayName}`;
+    selectedQuizDisplay.textContent = ` ${displayName}`;
     socket.emit('selectQuizType', { roomId: currentRoomId, quizFile: fileName, quizTitle: displayName, quizSet: setName });
 }
 
@@ -966,7 +966,7 @@ socket.on('roomStateUpdate', (room) => {
     }
     // ★★★ ここまで追加 ★★★
 
-    playersInRoomList.innerHTML = '<h3>参加プレイヤー:</h3><ul></ul>';
+    playersInRoomList.innerHTML = '<h3></h3><ul></ul>';
     const ul = playersInRoomList.querySelector('ul');
     room.players.forEach(player => {
         const li = document.createElement('li');
@@ -984,7 +984,7 @@ socket.on('roomStateUpdate', (room) => {
     });
     if (isHost) {
         hostControls.style.display = 'block';
-        lobbyRoomName.textContent = `部屋: ${room.name} (ホスト)`;
+        lobbyRoomName.textContent = ` ${room.name} `;
         lobbyRoomId.textContent = room.id;
 
         // ホストになった場合、部屋の現在のクイズ設定をクライアント側の変数に同期する
@@ -1005,7 +1005,7 @@ socket.on('roomStateUpdate', (room) => {
         } else if (room.quizFile === 'shutomei.csv') {
             selectShutomeiBtn.classList.add('selected');
         }
-        selectedQuizDisplay.textContent = room.quizFile ? `選択中のクイズ: ${room.quizTitle}` : 'クイズ未選択';
+        selectedQuizDisplay.textContent = room.quizFile ? ` ${room.quizTitle}` : 'クイズ未選択';
 
         const allReady = room.players.length > 0 && room.players.every(p => p.isReady || p.isHost);
         // ゲーム開始ボタンのdisabled状態を更新（room.quizFileが設定されていればdisabled解除されるはず）
@@ -1015,7 +1015,7 @@ socket.on('roomStateUpdate', (room) => {
        setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
     } else { // ホストではない場合
         hostControls.style.display = 'none';
-        lobbyRoomName.textContent = `部屋: ${room.name}`;
+        lobbyRoomName.textContent = ` ${room.name}`;
         lobbyRoomId.textContent = room.id;
 
         // ★★★ ここから修正 ★★★
