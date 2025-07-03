@@ -88,5 +88,18 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="client.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const answerInput = document.getElementById('answer');
+
+        if (answerInput) {
+            answerInput.addEventListener('input', () => {
+                // 入力値の右端が常に表示されるようにスクロール
+                answerInput.scrollLeft = answerInput.scrollWidth;
+            });
+        }
+    });
+</script>
 </body>
 </html>
