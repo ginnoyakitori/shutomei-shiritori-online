@@ -456,8 +456,11 @@ function createAndAttachFlickBtn(base) {
             }
         }
 
-        const kana = flickData[base][dir];
-        if (kana) answerEl.value += kana;
+       if (kana) {
+    answerEl.value += kana;
+    // 追記: 入力のたびにスクロールを右端に
+    answerEl.scrollLeft = answerEl.scrollWidth;
+}
     };
     const touchMoveHandler = e => e.preventDefault(); // スクロール防止
 
