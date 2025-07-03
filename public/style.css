@@ -154,25 +154,42 @@ h2.section-title {
 }
 
 /* 部屋リストのUL要素 */
-#room-list-ul { /* ★追加/修正: UL自体へのスタイル */
+#room-list-ul {
     list-style: none;
     padding: 0;
-    margin: 0; /* 親要素のroom-list-containerでパディングがあるので、ここは0でOK */
+    margin: 0;
     width: 100%;
 }
 
 /* 各部屋のアイテム (最も優先される定義に統合) */
+/* 部屋リストの各アイテム（li要素）に適用されている境界線を削除 */
+#room-list-ul li {
+    border: none; /* 枠線を完全に消す */
+    box-shadow: none; /* もし影が原因であれば影も消す */
+    /* background-color: #f0f0f0; /* 明るい白（グレー）または交互の背景色設定をここに */
+}
+
+/* 部屋が見つからない時の表示も同様に境界線を削除 */
+#room-list-ul .no-rooms {
+    border: none; /* 枠線を完全に消す */
+    box-shadow: none; /* もし影が原因であれば影も消す */
+    text-align: center;
+    color: #888;
+    padding: 20px;
+}
+
 .room-item {
+    /* 以前の#room-list-ul liからの重複定義を整理 */
     background-color: #ffffff; /* 元のroom-itemの背景色 */
-    border: 1px solid #d0d0d0; /* 元のroom-itemのボーダー */
+    /* border: 1px solid #d0d0d0; ここでボーダーを定義している場合、上記#room-list-ul liで上書きされる */
     border-radius: 8px;
-    padding: 0px;
-    margin-bottom: 0px;
+    padding: 10px; /* ここでパディングをしっかり設定 */
+    margin-bottom: 10px; /* 各アイテム間の余白 */
     text-align: left; /* テキスト左寄せ */
     cursor: pointer;
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
     
-    /* ★画像のように横並びにするためのFlexboxプロパティ */
+    /* 横並びにするためのFlexboxプロパティ */
     display: flex;
     justify-content: space-between; /* 要素を両端に寄せる */
     align-items: center; /* 垂直方向の中央揃え */
@@ -216,9 +233,7 @@ h2.section-title {
 }
 
 /* 部屋アクション（ボタン）部分 */
-/* room-actionsクラスは既に他の場所で使われているため、
-   ここを.room-item .room-actionsのように具体的に指定します */
-.room-item .room-actions { /* ★変更: 親セレクタを追加 */
+.room-item .room-actions { /* 親セレクタを追加 */
     flex-shrink: 0; /* ボタンが縮まないようにする */
 }
 
@@ -242,12 +257,6 @@ h2.section-title {
     cursor: not-allowed;
 }
 
-/* 部屋がない場合の表示 */
-.no-rooms {
-    text-align: center;
-    color: #888;
-    padding: 20px;
-}
 
 /* ロビー画面 */
 #room-lobby h2, #room-lobby p {
@@ -295,7 +304,12 @@ h2.section-title {
     color: white;
 }
 
-.player-status.host {
+/* ホストの場合に「準備OK/未準備」表示を非表示にする */
+.player-status.hidden {
+    display: none;
+}
+
+.player-status.host { /* このスタイルは.player-status.hiddenで上書きされますが、定義は残します */
     background-color: #ffc107;
     color: #333;
 }
@@ -303,6 +317,13 @@ h2.section-title {
 .player-status.ready {
     background-color: #28a745;
 }
+
+/* ホストの名前のスタイル */
+.player-name.host-name {
+    color: #45a049; /* ホストの色を緑に設定（お好みの色に変更してください） */
+    font-weight: bold; /* 太字にする */
+}
+
 
 .player-score {
     font-weight: bold;
@@ -477,10 +498,10 @@ h2.section-title {
 }
 
 /* hint位置（ボタン内ギリギリに調整） */
-.flick-btn .hint.top      { top: -3px; left: 50%; transform: translateX(-50%); }
-.flick-btn .hint.right     { right: -3px; top: 50%; transform: translateY(-50%); }
-.flick-btn .hint.bottom  { bottom: -3px; left: 50%; transform: translateX(-50%); }
-.flick-btn .hint.left      { left: -3px; top: 50%; transform: translateY(-50%); }
+.flick-btn .hint.top          { top: -3px; left: 50%; transform: translateX(-50%); }
+.flick-btn .hint.right         { right: -3px; top: 50%; transform: translateY(-50%); }
+.flick-btn .hint.bottom      { bottom: -3px; left: 50%; transform: translateX(-50%); }
+.flick-btn .hint.left        { left: -3px; top: 50%; transform: translateY(-50%); }
 
 #control-row {
     display: flex;
@@ -613,6 +634,7 @@ h2.section-title {
 }
 
 /* 入力方法選択のスタイル */
+/* ★player-settingsと重複している可能性のあるスタイルは削除または統合してください★ */
 #input-method-selection { /* HTMLにこのIDの要素が見当たらないため注意 */
     margin-top: 20px;
     margin-bottom: 0px;
@@ -650,18 +672,16 @@ h2.section-title {
     color: white !important;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
 }
+
+/* --- Player Settings (フリック/キーボード選択) --- */
 .player-settings h3 {
     color: #333;
     margin-bottom: 0px; /* 必要に応じて調整 */
     font-size: 1.2em;
-    /* h3もFlexアイテムとして扱われるため、適切な配置にする */
     width: 100%; /* 親要素の幅全体を使うように */
     text-align: center; /* テキスト中央揃え */
 }
 
-/* --- */
-
-/* 入力方法選択コンテナにFlexboxを適用し、ボタンを横並びにする */
 .player-settings {
     display: flex; /* Flexboxを有効にして子要素を横並びにする */
     justify-content: center; /* 子要素を水平方向の中央に配置 */
@@ -671,25 +691,18 @@ h2.section-title {
     margin-bottom: 0px; /* 下部に余白を追加 */
 }
 
-/* ラジオボタン自体は非表示 */
 .player-settings input[type="radio"] {
     display: none;
 }
 
-/* --- */
-
-/* ラジオボタンのラベルをボタンとしてスタイリング */
 .player-settings label {
-    /* ★ここを変更または確認★ */
-    /* displayを block から inline-flex に変更、または flex に変更 */
-    display: inline-flex; /* または flex; */ 
+    display: inline-flex; /* ★ここをinline-flexに変更。これで横並びになります★ */
     align-items: center; /* テキストを垂直中央揃え */
     justify-content: center; /* テキストを水平中央揃え */
     
     min-width: 120px; /* ボタンの最小幅を設定し、大きさを揃える */
     box-sizing: border-box; /* paddingとborderを幅に含める */
 
-    /* 既存のスタイル */
     cursor: pointer;
     font-size: 1.1em;
     padding: 10px 10px;
@@ -701,18 +714,12 @@ h2.section-title {
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* --- */
-
-/* ラベルにホバーした時のスタイル */
 .player-settings label:hover {
     background-color: #ffa500;
     border-color: #e07b00;
     transform: translateY(-2px);
 }
 
-/* --- */
-
-/* ラジオボタンが選択されたときのラベルのスタイル */
 .player-settings input[type="radio"]:checked + label {
     background-color: #ffc280; /* 選択時の背景色 */
     border-color: #ff8c00; /* 選択時のボーダー色 */
@@ -721,15 +728,15 @@ h2.section-title {
     box-shadow: 0 0 8px rgba(255, 140, 0, 0.6); /* 選択時に影 */
 }
 
-/* --- */
-
-/* 選択中の要素にホバーした時のスタイルを調整 */
 .player-settings input[type="radio"]:checked + label:hover {
     background-color: #ffc280;
     border-color: #ff8c00;
     transform: scale(1.05);
     cursor: default;
 }
+/* --- End Player Settings --- */
+
+
 /* スタート画面のボタンを大きくする */
 /* #start-box はHTMLに見当たらないため注意 */
 #start-box button {
@@ -762,13 +769,4 @@ h2.section-title {
 #start-btn:disabled {
     background-color: #cccccc !important;
     cursor: not-allowed;
-}
-.player-name.host-name {
-    color: #45a049; /* ホストの色をオレンジレッドに設定（お好みの色に変更してください） */
-    font-weight: bold; /* 太字にする */
-}
-
-/* ホストの場合に「準備OK/未準備」表示を非表示にする */
-.player-status.hidden {
-    display: none;
 }
