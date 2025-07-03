@@ -866,7 +866,7 @@ socket.on('roomList', (roomsData) => {
             <div class="room-info">
                 <span class="room-name"> ${room.name}</span>${isGameInProgressText}<br>
                 <span class="room-host"> ${hostName}</span><br>
-                <span class="room-players"> ${playerCount}人 (${playerNames})</span>
+                <span class="room-players">参加者: ${playerCount}人 </span>
             </div>
             <div class="room-actions">
                 <button class="join-room-from-list-btn button primary-button" data-room-id="${room.id}" ${room.isPlaying ? 'disabled' : ''}>入室</button>

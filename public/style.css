@@ -162,11 +162,9 @@ h2.section-title {
 }
 
 /* 各部屋のアイテム (最も優先される定義に統合) */
-/* 部屋リストの各アイテム（li要素）に適用されている境界線を削除 */
 #room-list-ul li {
-    border: none; /* 枠線を完全に消す */
-    box-shadow: none; /* もし影が原因であれば影も消す */
-    /* background-color: #f0f0f0; /* 明るい白（グレー）または交互の背景色設定をここに */
+    /* ここにborderやbox-shadowを残す必要はありません。
+       それらはより詳細度の高い .room-item で扱われます。 */
 }
 
 /* 部屋が見つからない時の表示も同様に境界線を削除 */
@@ -179,9 +177,8 @@ h2.section-title {
 }
 
 .room-item {
-    /* 以前の#room-list-ul liからの重複定義を整理 */
     background-color: #ffffff; /* 元のroom-itemの背景色 */
-    /* border: 1px solid #d0d0d0; ここでボーダーを定義している場合、上記#room-list-ul liで上書きされる */
+    border: none; /* ★ここを "none" に変更して枠を消します★ */
     border-radius: 8px;
     padding: 10px; /* ここでパディングをしっかり設定 */
     margin-bottom: 10px; /* 各アイテム間の余白 */
@@ -193,12 +190,12 @@ h2.section-title {
     display: flex;
     justify-content: space-between; /* 要素を両端に寄せる */
     align-items: center; /* 垂直方向の中央揃え */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 新しいシャドウ */
+    box-shadow: none; /* ★ここも "none" に変更して影を消します★ */
 }
 
 .room-item:hover {
     background-color: #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* ホバー時にのみ影を表示 */
 }
 
 .room-item.full {
