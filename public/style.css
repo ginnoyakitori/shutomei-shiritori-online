@@ -34,12 +34,12 @@ input, select { /* buttonは.buttonクラスで定義済みのため除外 */
     box-shadow: none; /* box-shadowを削除 */
     max-width: 600px;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 
 h1#main-title {
     color: #007bff;
-    margin-bottom: 30px;
+    margin-bottom: 0px;
     font-size: 2.2em;
     text-align: center;
 }
@@ -47,14 +47,14 @@ h1#main-title {
 h2.section-title {
     color: #007bff;
     margin-top: 25px;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
     font-size: 1.6em;
 }
 
 .section-description {
     font-size: 1.1em;
     color: #555;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
 }
 
 /* ボタンの基本スタイル */
@@ -119,8 +119,8 @@ h2.section-title {
 
 /* 部屋選択画面 */
 #room-selection-screen .room-actions {
-    margin-top: 30px;
-    margin-bottom: 30px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #room-selection-screen .create-room-section,
@@ -129,7 +129,7 @@ h2.section-title {
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 
 #room-selection-screen .create-room-section .input-field,
@@ -167,7 +167,7 @@ h2.section-title {
     border: 1px solid #d0d0d0; /* 元のroom-itemのボーダー */
     border-radius: 8px;
     padding: 15px;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
     text-align: left; /* テキスト左寄せ */
     cursor: pointer;
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
@@ -251,7 +251,7 @@ h2.section-title {
 
 /* ロビー画面 */
 #room-lobby h2, #room-lobby p {
-    margin-bottom: 15px;
+    margin-bottom: 0px;
 }
 
 .players-list {
@@ -259,7 +259,7 @@ h2.section-title {
     border-radius: 8px;
     padding: 15px;
     background-color: #f9f9f9;
-    margin-bottom: 25px;
+    margin-bottom: 0px;
     max-height: 250px;
     overflow-y: auto;
 }
@@ -320,7 +320,7 @@ h2.section-title {
     justify-content: center;
     gap: 10px;
     margin-top: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
 }
 
 .quiz-select-button {
@@ -337,7 +337,7 @@ h2.section-title {
 #selected-quiz-display {
     font-weight: bold;
     color: #555;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 
 .lobby-actions {
@@ -377,7 +377,7 @@ h2.section-title {
     font-size: 1.6em;
     width: 90%;
     padding: 0px;
-    margin-bottom: 5px;
+    margin-bottom: 0px;
     border: 2px solid #ccc; /* 元に戻す */
     border-radius: 6px;
     background: #f9f9f9;
@@ -586,7 +586,7 @@ h2.section-title {
 .final-scores-list {
     list-style: none;
     padding: 0;
-    margin-bottom: 30px;
+    margin-bottom: 0px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #f9f9f9;
@@ -615,7 +615,7 @@ h2.section-title {
 /* 入力方法選択のスタイル */
 #input-method-selection { /* HTMLにこのIDの要素が見当たらないため注意 */
     margin-top: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
     display: flex;
     justify-content: center;
     gap: 15px;
@@ -650,17 +650,46 @@ h2.section-title {
     color: white !important;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
 }
-
 .player-settings h3 {
     color: #333;
-    margin-bottom: 15px;
+    margin-bottom: 15px; /* 必要に応じて調整 */
     font-size: 1.2em;
+    /* h3もFlexアイテムとして扱われるため、適切な配置にする */
+    width: 100%; /* 親要素の幅全体を使うように */
+    text-align: center; /* テキスト中央揃え */
 }
+
+/* --- */
+
+/* 入力方法選択コンテナにFlexboxを適用し、ボタンを横並びにする */
+.player-settings {
+    display: flex; /* Flexboxを有効にして子要素を横並びにする */
+    justify-content: center; /* 子要素を水平方向の中央に配置 */
+    align-items: center; /* 子要素を垂直方向の中央に揃える */
+    gap: 20px; /* 各ボタン間の間隔を設定 */
+    flex-wrap: wrap; /* 画面幅が狭い場合にボタンを折り返す */
+    margin-bottom: 20px; /* 下部に余白を追加 */
+}
+
+/* ラジオボタン自体は非表示 */
+.player-settings input[type="radio"] {
+    display: none;
+}
+
+/* --- */
 
 /* ラジオボタンのラベルをボタンとしてスタイリング */
 .player-settings label {
-    display: inline-block;
-    margin: 15px;
+    /* ★ここを変更または確認★ */
+    /* displayを block から inline-flex に変更、または flex に変更 */
+    display: inline-flex; /* または flex; */ 
+    align-items: center; /* テキストを垂直中央揃え */
+    justify-content: center; /* テキストを水平中央揃え */
+    
+    min-width: 120px; /* ボタンの最小幅を設定し、大きさを揃える */
+    box-sizing: border-box; /* paddingとborderを幅に含める */
+
+    /* 既存のスタイル */
     cursor: pointer;
     font-size: 1.1em;
     padding: 10px 20px;
@@ -672,10 +701,7 @@ h2.section-title {
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ラジオボタン自体は非表示 */
-.player-settings input[type="radio"] {
-    display: none;
-}
+/* --- */
 
 /* ラベルにホバーした時のスタイル */
 .player-settings label:hover {
@@ -684,23 +710,26 @@ h2.section-title {
     transform: translateY(-2px);
 }
 
+/* --- */
+
 /* ラジオボタンが選択されたときのラベルのスタイル */
 .player-settings input[type="radio"]:checked + label {
-    background-color: #ffc280;
-    border-color: #ff8c00;
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 0 8px rgba(255, 140, 0, 0.6);
+    background-color: #ffc280; /* 選択時の背景色 */
+    border-color: #ff8c00; /* 選択時のボーダー色 */
+    color: white; /* 選択時の文字色 */
+    transform: scale(1.05); /* 選択時に少し拡大 */
+    box-shadow: 0 0 8px rgba(255, 140, 0, 0.6); /* 選択時に影 */
 }
 
-/* 選択中の要素にホバーした時のスタイルを調整（任意） */
+/* --- */
+
+/* 選択中の要素にホバーした時のスタイルを調整 */
 .player-settings input[type="radio"]:checked + label:hover {
     background-color: #ffc280;
     border-color: #ff8c00;
     transform: scale(1.05);
     cursor: default;
 }
-
 /* スタート画面のボタンを大きくする */
 /* #start-box はHTMLに見当たらないため注意 */
 #start-box button {
@@ -733,4 +762,13 @@ h2.section-title {
 #start-btn:disabled {
     background-color: #cccccc !important;
     cursor: not-allowed;
+}
+.player-name.host-name {
+    color: #45a049; /* ホストの色をオレンジレッドに設定（お好みの色に変更してください） */
+    font-weight: bold; /* 太字にする */
+}
+
+/* ホストの場合に「準備OK/未準備」表示を非表示にする */
+.player-status.hidden {
+    display: none;
 }

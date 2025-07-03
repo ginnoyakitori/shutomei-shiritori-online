@@ -830,7 +830,7 @@ socket.on('quizModeSelected', (mode) => {
     } else {
         modeText = '未選択';
     }
-    quizModeDisplay.textContent = `しりとりの種類: ${modeText}`;
+    quizModeDisplay.textContent = `しりとり${modeText}`;
 });
 
 // 部屋リスト更新時
@@ -865,7 +865,7 @@ socket.on('roomList', (roomsData) => {
         li.innerHTML = `
             <div class="room-info">
                 <span class="room-name"> ${room.name}</span>${isGameInProgressText}<br>
-                <span class="room-host">ホスト: ${hostName}</span><br>
+                <span class="room-host"> ${hostName}</span><br>
                 <span class="room-players">参加者: ${playerCount}人 (${playerNames})</span>
             </div>
             <div class="room-actions">
@@ -971,14 +971,14 @@ socket.on('roomStateUpdate', (room) => {
     room.players.forEach(player => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <div class="player-info">
-                <span class="player-name">${player.nickname}</span>
-                <span class="player-status ${player.isReady ? 'ready' : ''} ${player.isHost ? 'host' : ''}">
-                    ${player.isHost ? 'ホスト' : (player.isReady ? '準備OK' : '未準備')}
-                </span>
-            </div>
-            <span class="player-score">勝ち数: ${player.wins || 0}</span>
-            <span class="player-input-method">入力: ${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
+    <div class="player-info">
+        <span class="player-name ${player.isHost ? 'host-name' : ''}">${player.nickname}</span>
+        <span class="player-status ${player.isReady ? 'ready' : ''} ${player.isHost ? 'hidden' : ''}">
+            ${player.isReady ? '準備OK' : '未準備'}
+        </span>
+    </div>
+            <span class="player-score"> ${player.wins || 0}勝</span>
+            <span class="player-input-method">${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
         `;
         ul.appendChild(li);
     });
