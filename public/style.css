@@ -10,7 +10,7 @@ html, body {
 }
 
 body {
-    padding: 20px; /* 全体的なパディング */
+    padding: 0px; /* 全体的なパディング */
     background-color: #f4f7f6; /* 背景色 */
     color: #333; /* デフォルト文字色 */
     display: flex;
@@ -145,7 +145,7 @@ h2.section-title {
 
 /* 部屋リストのコンテナ */
 .room-list-container {
-    border: 1px solid #e0e0e0;
+    border:  none ;
     border-radius: 8px;
     padding: 15px;
     background-color: #f9f9f9;
@@ -162,9 +162,11 @@ h2.section-title {
 }
 
 /* 各部屋のアイテム (最も優先される定義に統合) */
+/* 部屋リストの各アイテム（li要素）に適用されている境界線を削除 */
 #room-list-ul li {
-    /* ここにborderやbox-shadowを残す必要はありません。
-       それらはより詳細度の高い .room-item で扱われます。 */
+    border: none; /* 枠線を完全に消す */
+    box-shadow: none; /* もし影が原因であれば影も消す */
+    /* background-color: #f0f0f0; /* 明るい白（グレー）または交互の背景色設定をここに */
 }
 
 /* 部屋が見つからない時の表示も同様に境界線を削除 */
@@ -177,8 +179,9 @@ h2.section-title {
 }
 
 .room-item {
+    /* 以前の#room-list-ul liからの重複定義を整理 */
     background-color: #ffffff; /* 元のroom-itemの背景色 */
-    border: none; /* ★ここを "none" に変更して枠を消します★ */
+    /* border: 1px solid #d0d0d0; ここでボーダーを定義している場合、上記#room-list-ul liで上書きされる */
     border-radius: 8px;
     padding: 10px; /* ここでパディングをしっかり設定 */
     margin-bottom: 10px; /* 各アイテム間の余白 */
@@ -190,12 +193,12 @@ h2.section-title {
     display: flex;
     justify-content: space-between; /* 要素を両端に寄せる */
     align-items: center; /* 垂直方向の中央揃え */
-    box-shadow: none; /* ★ここも "none" に変更して影を消します★ */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 新しいシャドウ */
 }
 
 .room-item:hover {
     background-color: #e9ecef;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* ホバー時にのみ影を表示 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .room-item.full {
