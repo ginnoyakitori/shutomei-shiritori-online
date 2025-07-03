@@ -396,7 +396,11 @@ h2.section-title {
 
 #answer {
     font-size: 1.6em;
-    width: 90%;
+    /* width: 90%;  現在の設定 */
+    width: 95%; /* または 98% など、少し広げてみる */
+    /* あるいは、max-width を設定して固定値にするのも有効 */
+    /* max-width: 500px; */ /* 例えば、PCでは500pxまで広げる */
+    
     padding: 0px;
     margin-bottom: 0px;
     border: 2px solid #ccc;
@@ -406,11 +410,11 @@ h2.section-title {
     margin: 0 auto;
     color: black;
     text-align: left;
-    overflow-x: auto;/* ★ここを追加: 横スクロールを可能にする★ */
-    white-space: nowrap; /* ★ここを追加: テキストを改行しない★ */
-    text-overflow: clip; /* ★ここを追加: はみ出たテキストはクリップする★ */
+    overflow-x: auto;
+    white-space: nowrap;
+    text-overflow: clip;
+    padding-right: 20px; /* 右側の余白を維持 */
 }
-
 #feedback {
     font-size: 1.2em;
     color: #dc3545;
