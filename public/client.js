@@ -366,7 +366,6 @@ function physicalInputKeydownHandler(event) {
     romajiBuffer = remainingRomaji; // 確定できなかった分を次のバッファにする
 }
 
-
 // ===============================================
 // === フリック入力関連 ===
 // ===============================================
@@ -455,14 +454,13 @@ function createAndAttachFlickBtn(base) {
                 else if (dy < -th) dir = 0; // 上
             }
         }
-
-   
-    const kana = flickData[base][dir];  // ← これが必要
-    if (kana) {
-        answerEl.value += kana;
-        answerEl.scrollLeft = answerEl.scrollWidth;
-    }
-};
+    
+        const kana = flickData[base][dir];
+        if (kana) {
+            answerEl.value += kana;
+            answerEl.scrollLeft = answerEl.scrollWidth;
+        }
+    };
     const touchMoveHandler = e => e.preventDefault(); // スクロール防止
 
     // イベントハンドラをボタンのプロパティに保存しておき、enable/disableで参照できるようにする
@@ -507,7 +505,6 @@ const modifyBtnClickHandler = () => {
 
     answerEl.value = rest + next; // 変換した文字で更新
 };
-
 // ===============================================
 // === ヘルパー関数群 (UIの表示/非表示、入力モードの切り替えなどを担当) ===
 // ここで既存の enableFlickInput / disableFlickInput を更新
@@ -1218,20 +1215,17 @@ document.addEventListener('DOMContentLoaded', () => {
     resultBox.style.display = 'none';
 
     // フリックキーボードのボタンを動的に生成
-    Object.keys(flickData).forEach(base => {
-        const btn = createAndAttachFlickBtn(base);
-        if (base === "わ") {
-            // "わ"行だけはcontrolRowのクリアボタンの前に挿入
-            const clearBtn = document.getElementById("clear-btn");
-            if (clearBtn) {
-                controlRow.insertBefore(btn, clearBtn);
-            } else {
-                controlRow.appendChild(btn); // clear-btnがない場合
-            }
-        } else {
-            flickGrid.appendChild(btn);
-        }
-    });
+    
+Object.keys(flickData).forEach(base => {
+  // すべてのフリックボタンを createAndAttachFlickBtn で生成し、
+  // 「ワ」ボタンのみ controlRow に挿入、他は flickGrid に挿入
+  const btn = createAndAttachFlickBtn(base);
+  if (base === "わ") {
+    controlRow.insertBefore(btn, document.getElementById("clear-btn"));
+  } else {
+    flickGrid.appendChild(btn);
+  }
+});
 
     // 初期状態では両方の入力方法を無効化（ユーザー選択を待つ）
     disablePhysicalInput();

@@ -22,7 +22,7 @@ body {
 /* input, button, select の基本スタイルをリセット */
 input, select { /* buttonは.buttonクラスで定義済みのため除外 */
     font-size: 1rem;
-    margin: 5px;
+    margin: 0px;
     padding: 0px;
     box-sizing: border-box; /* パディングとボーダーを幅に含める */
 }
@@ -67,7 +67,7 @@ h2.section-title {
     cursor: pointer;
     font-size: 1em;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    margin: 5px;
+    margin: 0px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -218,7 +218,7 @@ h2.section-title {
 /* 部屋情報部分 */
 .room-info {
     flex-grow: 1; /* 部屋情報が利用可能なスペースを占めるようにする */
-    margin-right: 15px; /* ボタンとの間にスペースを開ける */
+    margin-right: 0px; /* ボタンとの間にスペースを開ける */
 }
 
 .room-name {
@@ -297,7 +297,7 @@ h2.section-title {
 }
 
 .player-status {
-    padding: 3px 8px;
+    padding: 0px 8px;
     border-radius: 5px;
     font-size: 0.8em;
     font-weight: bold;
@@ -400,7 +400,7 @@ h2.section-title {
     width: 95%; /* または 98% など、少し広げてみる */
     /* あるいは、max-width を設定して固定値にするのも有効 */
     /* max-width: 500px; */ /* 例えば、PCでは500pxまで広げる */
-    
+     color: black;
     padding: 0px;
     margin-bottom: 0px;
     border: 2px solid #ccc;
@@ -453,91 +453,84 @@ h2.section-title {
 }
 
 
-/* ボタン共通設定 */
-.flick-btn {
-    position: relative;
-    width: 70px; /* スマホ横幅に応じたサイズ */
-    max-width: 70px;
-    height:70px;
-    max-height: 70px;
-    background: #eef;
-    font-size: 2em;
-    border-radius: 8px;
-    border: none;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    touch-action: none;
-    box-sizing: border-box;
-    overflow: hidden;
-    /* クリック時のスタイル変化 */
-    transition: background-color 0.1s ease;
-}
-.flick-btn:active, #control-row button:active {
-    background-color: #d0d0f0; /* 押された時の色 */
-}
+
+    /* ボタン共通設定 */
+    .flick-btn {
+      position: relative;
+      width: 70px; /* スマホ横幅に応じたサイズ */
+      max-width: 70px;
+      height:70px;
+      max-height: 70px;
+      background: #eef;
+      font-size: 2em;
+      border-radius: 8px;
+      border: none;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+      touch-action: none;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: nowrap; /* 文字の折り返し防止 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+    flex-shrink: 0;
+     min-width: 70px; 
+      /* クリック時のスタイル変化 */
+      transition: background-color 0.1s ease;
+    }
+    .flick-btn:active, #control-row button:active {
+        background-color: #d0d0f0; /* 押された時の色 */
+    }
 
 
-#flick-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 70px);
-    grid-template-rows: repeat(4, 70px);
-    gap: 15px;
-    justify-content: center;
-    margin: 0 auto;
-}
+    #flick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      grid-template-rows: repeat(4, 70px);
+      gap: 15px;
+      justify-content: center;
+      margin: 0 auto;
+    }
 
-.flick-btn .center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #000;
-}
 
-.flick-btn .hint {
-    position: absolute;
-    font-size: 0.6em;
-    opacity: 0.6;
-    pointer-events: none;
-    color: #000; /* ヒントの文字色を黒に */
-    z-index: 0;
-}
+    .flick-btn .center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #000;
+    }
 
-/* hint位置（ボタン内ギリギリに調整） */
-.flick-btn .hint.top          { top: -3px; left: 50%; transform: translateX(-50%); }
-.flick-btn .hint.right         { right: -3px; top: 50%; transform: translateY(-50%); }
-.flick-btn .hint.bottom      { bottom: -3px; left: 50%; transform: translateX(-50%); }
-.flick-btn .hint.left        { left: -3px; top: 50%; transform: translateY(-50%); }
+    .flick-btn .hint {
+      position: absolute;
+      font-size: 0.6em;
+      opacity: 0.6;
+      pointer-events: none;
+      color: #000;
+    }
 
-#control-row {
+    /* hint位置（ボタン内ギリギリ） */
+    .flick-btn .top    { top: -3px; left: 50%; transform: translateX(-50%); }
+    .flick-btn .right  { right: -3px; top: 50%; transform: translateY(-50%); }
+    .flick-btn .bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+    .flick-btn .left   { left: -3px; top: 50%; transform: translateY(-50%); }
+
+    .top { top: 5px; left: 50%; transform: translateX(-50%); }
+    .right { top: 50%; right: 5px; transform: translateY(-50%); }
+    .bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
+    .left { top: 50%; left: 5px; transform: translateY(-50%); }
+
+   #control-row {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-top: -5px;
-    touch-action: none;
-    transform: translateY(-70px);
-}
-
-#modify-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 1.4em;
-    font-weight: bold;
-    border-radius: 8px;
-    border: none;
-    background: #eef;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    touch-action: none;
-    transition: background-color 0.1s ease;
-    order: 1;
-    color: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    
+    justify-content: center;   /* 水平方向中央揃え */
+    align-items: center;       /* 垂直方向中央揃え */
+    gap: 5px;
+    position: relative;        /* 親要素基準で位置調整可能に */
+    margin: 0 auto;            /* 左右中央寄せ */
+    top: -90px;                 /* 必要なら上下位置をここで調整 */
+    transform: translateX(0);  /* 中央からのズレ補正をリセット */
+    width: fit-content;        /* 要素の横幅を内容に合わせる */
 }
 
 #clear-btn {
@@ -545,51 +538,88 @@ h2.section-title {
     height: 70px;
     font-size: 2.5em;
     font-weight: bold;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     background: #eef;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     touch-action: none;
     transition: background-color 0.1s ease;
-    order: 3;
-    color: black;
+    
+    /* Centering the text */
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 70px; /* Vertically center text by matching height */
+    white-space: nowrap; /* Prevent the text from wrapping */
 }
 
-/* 「ワ」ボタンにもorderを設定 */
-.flick-btn[data-base="わ"] {
-    order: 2;
-    margin-left: 0px;
-}
 
-#modify-btn:active, #clear-btn:active {
-    background-color: #d0d0f0;
-}
-
-#submit-btn {
-    width: 60vw;
-    max-width: 300px;
-    height: 17vw;
-    max-height: 80px;
-    font-size: 1.6em;
+#modify-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 1.7em;
     font-weight: bold;
     border-radius: 10px;
-    background: #cce;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    margin-top: -35px;
-    margin-left: auto;
-    margin-right: auto;
-    transform: translateY(-52px);
-    display: block;
+    border: none;
+    background: #eef;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    touch-action: none;
     transition: background-color 0.1s ease;
-    color: black;
-}
-#submit-btn:active {
-    background-color: #aaccdd;
+    
+    /* Centering the text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 70px; /* Vertically center text by matching height */
+    white-space: nowrap; /* Prevent the text from wrapping */
 }
 
+
+#modify-btn:active, #clear-btn:active {
+    background-color: #e0e0e0;
+}
+#modify-btn:active, #clear-btn:active {
+    background-color: #e0e0e0; /* Color when pressed */
+}
+
+    #modify-btn:active, #clear-btn:active {
+        background-color: #e0e0e0; /* 押された時の色 */
+    }
+#modify-btn, #clear-btn {
+    color: black; /* 文字色を黒に設定 */
+    /* 他のスタイルも必要に応じて設定 */
+}
+
+/* もし、文字を囲む span があるなら */
+#modify-btn span, #clear-btn span {
+    color: black;
+}
+    #submit-btn {
+      width: 60vw;
+      max-width: 300px;
+      height: 17vw;
+      max-height: 80px;
+      font-size: 1.6em;
+      font-weight: bold;
+      border-radius: 10px;
+      background: #cce;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      margin-top:-7px;
+      margin-left: auto;   /* 追加 */
+      margin-right: auto;  /* 追加 */
+      transform: translateY(-52px); /* translateX(0) を削除し、Y軸のみに */
+      display: block;
+      transition: background-color 0.1s ease;
+    }
+    #submit-btn:active {
+        background-color: #aaccdd; /* 押された時の色 */
+    }
+
+    #question {
+      font-size: 1.5em; /* ← 拡大！ */
+      font-weight: bold;
+      margin-bottom: 0em;
+    }
 
 /* 結果画面 */
 .result-container h2 {
@@ -644,7 +674,7 @@ h2.section-title {
 /* ★player-settingsと重複している可能性のあるスタイルは削除または統合してください★ */
 #input-method-selection { /* HTMLにこのIDの要素が見当たらないため注意 */
     margin-top: 20px;
-    margin-bottom: 0px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: center;
     gap: 15px;
@@ -724,7 +754,7 @@ h2.section-title {
 .player-settings label:hover {
     background-color: #ffa500;
     border-color: #e07b00;
-    transform: translateY(-2px);
+    transform: translateY(0px);
 }
 
 .player-settings input[type="radio"]:checked + label {
