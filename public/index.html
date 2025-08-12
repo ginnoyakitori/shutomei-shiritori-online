@@ -29,17 +29,16 @@
       <input type="text" id="join-room-id" placeholder="部屋ID" class="input-field">
       <button id="join-room-btn" class="button">ルームIDで入室</button>
     </div>
-    <!-- 追加した「ホームに戻る」ボタン -->
-    <div class="home-button-section">
-        <button id="return-to-home-btn" class="button secondary-button">ホームに戻る</button>
-    </div>
+        <div class="home-button-section">
+        <button id="return-to-home-btn" class="button secondary-button">ホームに戻る</button>
+    </div>
   </div>
 
   <div id="room-lobby" class="container" style="display:none;">
     <h2 id="lobby-room-name"></h2>
     <p>部屋ID: <span id="lobby-room-id"></span></p>
-  
-      <p id="selected-quiz-display">クイズ未選択</p>
+    <p id="quiz-mode-display">しりとりモード: 未選択</p>
+    <p id="selected-quiz-display">クイズ未選択</p>
 
     <div id="players-in-room" class="players-list">
       <ul></ul>
@@ -96,7 +95,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
         const answerInput = document.getElementById('answer');
-        const returnToHomeBtn = document.getElementById('return-to-home-btn');
+        const returnToHomeBtn = document.getElementById('return-to-home-btn');
 
         if (answerInput) {
             answerInput.addEventListener('input', () => {
@@ -105,11 +104,11 @@
             });
         }
 
-        if (returnToHomeBtn) {
-            returnToHomeBtn.addEventListener('click', () => {
-                window.location.href = 'https://shutomei-shiritori-online.web.app/index.html';
-            });
-        }
+        if (returnToHomeBtn) {
+            returnToHomeBtn.addEventListener('click', () => {
+                window.location.href = 'https://shutomei-shiritori-online.web.app/index.html';
+            });
+        }
     });
 </script>
 </body>

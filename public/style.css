@@ -470,6 +470,7 @@ h2.section-title {
     overflow: hidden;
     /* クリック時のスタイル変化 */
     transition: background-color 0.1s ease;
+     flex-shrink: 0;
 }
 .flick-btn:active, #control-row button:active {
     background-color: #d0d0f0; /* 押された時の色 */

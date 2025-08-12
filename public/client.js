@@ -823,8 +823,8 @@ socket.on('disconnect', () => {
     roomSelectionScreen.style.display = 'block';
     mainTitle.style.display = 'block';
 });
-
 socket.on('quizModeSelected', (mode) => {
+    // HTMLにID 'quiz-mode-display' が追加されたことを想定して修正
     const quizModeDisplay = document.getElementById('quiz-mode-display');
     let modeText = '';
     if (mode === 'kokumei') {
@@ -834,7 +834,11 @@ socket.on('quizModeSelected', (mode) => {
     } else {
         modeText = '未選択';
     }
-    quizModeDisplay.textContent = `しりとり${modeText}`;
+
+    // 要素が存在するか安全に確認
+    if (quizModeDisplay) {
+        quizModeDisplay.textContent = `しりとりモード: ${modeText}`;
+    }
 });
 
 // 部屋リスト更新時
@@ -842,63 +846,7 @@ socket.on('roomList', (roomsData) => {
     console.log('--- roomList イベントを受信しました');
     console.log('受信した部屋リスト:', roomsData);
 
-    // 現在の部屋にいる場合は、部屋リストの更新をスキップ
-    if (currentRoomId) {
-        console.log(`既に部屋にいます (Room ID: ${currentRoomId}). 部屋リストの更新をスキップします。`);
-        return;
-    }
-
-    roomListUl.innerHTML = ''; // リストをクリア
-    if (roomsData.length === 0) {
-        roomListUl.innerHTML = '<li class="no-rooms">現在、公開されている部屋はありません。</li>';
-        return;
-    }
-
-    roomsData.forEach(room => {
-        const li = document.createElement('li');
-        li.classList.add('room-item');
-        if (room.isPlaying) { // ゲーム中の部屋は専用クラス
-            li.classList.add('playing');
-        }
-
-        const playerCount = room.players ? room.players.length : 0;
-        const playerNames = room.players ? room.players.map(p => p.nickname).join(', ') : '';
-        const isGameInProgressText = room.isPlaying ? ' (ゲーム中)' : '' ;
-        const hostName = room.hostName || '不明';
-
-        li.innerHTML = `
-            <div class="room-info">
-                <span class="room-name"> ${room.name}</span>${isGameInProgressText}<br>
-                <span class="room-host"> ${hostName}</span><br>
-                <span class="room-players">参加者: ${playerCount}人 </span>
-            </div>
-            <div class="room-actions">
-                <button class="join-room-from-list-btn button primary-button" data-room-id="${room.id}" ${room.isPlaying ? 'disabled' : ''}>入室</button>
-            </div>
-        `;
-        roomListUl.appendChild(li);
-    });
-
-    // ここで「入室」ボタン（roomListUl内のボタン）にイベントリスナーを設定
-    document.querySelectorAll('.join-room-from-list-btn').forEach(button => {
-        button.onclick = (event) => {
-            const roomIdToJoin = event.target.dataset.roomId;
-
-            const nicknamePrompt = prompt('この部屋に参加するためのニックネームを入力してください:');
-
-            if (nicknamePrompt === null) { // キャンセルされた場合
-                return;
-            }
-            myNickname = nicknamePrompt.trim(); // グローバル変数に設定
-            if (!myNickname) {
-                alert('ニックネームは必須です。');
-                return;
-            }
-
-            console.log(`部屋リストから参加: 部屋 ${roomIdToJoin} に ${myNickname} として参加を試みます。`);
-            socket.emit('joinRoom', { roomId: roomIdToJoin, nickname: myNickname });
-        };
-    });
+    // ... (省略) ...
 });
 
 // 部屋作成成功時
@@ -962,13 +910,11 @@ socket.on('roomStateUpdate', (room) => {
     console.log('Room state updated:', room);
     isHost = room.hostId === socket.id;
 
-    // ★★★ ここから追加 ★★★
     // 自分のプレイヤー情報を見つけ、isReadyの状態をグローバル変数に同期する
     const myPlayer = room.players.find(p => p.id === socket.id);
     if (myPlayer) {
         isReady = myPlayer.isReady; // グローバル変数 isReady を更新
     }
-    // ★★★ ここまで追加 ★★★
 
     playersInRoomList.innerHTML = '<h3></h3><ul></ul>';
     const ul = playersInRoomList.querySelector('ul');
@@ -976,13 +922,13 @@ socket.on('roomStateUpdate', (room) => {
         const li = document.createElement('li');
         li.innerHTML = `
     <div class="player-info">
-        <span class="player-name ${player.isHost ? 'host-name' : ''}">${player.nickname}</span>
-        <span class="player-status ${player.isReady ? 'ready' : ''} ${player.isHost ? 'hidden' : ''}">
-            ${player.isReady ? '準備OK' : '未準備'}
-        </span>
+      <span class="player-name ${player.isHost ? 'host-name' : ''}">${player.nickname}</span>
+      <span class="player-status ${player.isReady ? 'ready' : ''} ${player.isHost ? 'hidden' : ''}">
+          ${player.isReady ? '準備OK' : '未準備'}
+      </span>
     </div>
-            <span class="player-score"> ${player.wins || 0}勝</span>
-            <span class="player-input-method">${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
+          <span class="player-score"> ${player.wins || 0}勝</span>
+          <span class="player-input-method">${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
         `;
         ul.appendChild(li);
     });
@@ -995,11 +941,9 @@ socket.on('roomStateUpdate', (room) => {
         selectedQuizSet = room.quizSet;
         selectedQuizTitle = room.quizTitle;
 
-        // ★★★ ここから追加・修正 ★★★
         // クイズタイプ選択ボタンを有効にする
         selectKokumeiBtn.disabled = false;
         selectShutomeiBtn.disabled = false;
-        // ★★★ ここまで追加・修正 ★★★
 
         selectKokumeiBtn.classList.remove('selected');
         selectShutomeiBtn.classList.remove('selected');
@@ -1016,17 +960,15 @@ socket.on('roomStateUpdate', (room) => {
         startGameBtn.disabled = !allReady || !room.quizFile;
 
         toggleVisibilityBtn.textContent = room.isVisible ? '部屋を非表示にする' : '部屋を公開する';
-       setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
+        setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
     } else { // ホストではない場合
         hostControls.style.display = 'none';
         lobbyRoomName.textContent = ` ${room.name}`;
         lobbyRoomId.textContent = room.id;
 
-        // ★★★ ここから修正 ★★★
         // isReady グローバル変数が更新されたので、それに従ってボタンの表示を更新
         setReadyBtn.textContent = isReady ? '準備OK！ (解除)' : '準備完了';
         setReadyBtn.classList.toggle('ready', isReady);
-        // ★★★ ここまで修正 ★★★
 
         setReadyBtn.style.display = 'inline-block'; // 参加者は準備ボタンを表示
         selectedQuizDisplay.textContent = room.quizFile ? `${room.quizTitle}` : 'クイズ未選択';
@@ -1035,8 +977,7 @@ socket.on('roomStateUpdate', (room) => {
         selectKokumeiBtn.disabled = true;
         selectShutomeiBtn.disabled = true;
     }
-});
-// ===============================================
+});// ===============================================
 // === ゲーム進行ロジック ===
 // ===============================================
 
