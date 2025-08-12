@@ -604,10 +604,10 @@ h2.section-title {
       border-radius: 10px;
       background: #cce;
       box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-      margin-top:-7px;
+      top:-150px;
       margin-left: auto;   /* 追加 */
       margin-right: auto;  /* 追加 */
-      transform: translateY(-52px); /* translateX(0) を削除し、Y軸のみに */
+      transform: translateY(-152px); /* translateX(0) を削除し、Y軸のみに */
       display: block;
       transition: background-color 0.1s ease;
     }
