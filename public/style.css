@@ -387,7 +387,8 @@ h2.section-title {
 #question {
     font-size: 1.9em;
     font-weight: bold;
-    margin-bottom: 0em;
+    margin-top: -30px;
+    margin-bottom: -100px; 
     min-height: 60px;
     display: flex;
     align-items: center;
@@ -413,7 +414,7 @@ h2.section-title {
     overflow-x: auto;
     white-space: nowrap;
     text-overflow: clip;
-    padding-right: 20px; /* 右側の余白を維持 */
+    padding-right: 0px; /* 右側の余白を維持 */
 }
 #feedback {
     font-size: 1.2em;
@@ -604,10 +605,9 @@ h2.section-title {
       border-radius: 10px;
       background: #cce;
       box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-      top:-150px;
       margin-left: auto;   /* 追加 */
       margin-right: auto;  /* 追加 */
-      transform: translateY(-152px); /* translateX(0) を削除し、Y軸のみに */
+      margin-top: -130px;
       display: block;
       transition: background-color 0.1s ease;
     }
