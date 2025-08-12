@@ -388,8 +388,8 @@ h2.section-title {
     font-size: 1.9em;
     font-weight: bold;
     margin-top: -30px;
-    margin-bottom: -100px; 
-    min-height: 60px;
+    margin-bottom: -30px; 
+    min-height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -397,18 +397,15 @@ h2.section-title {
 
 #answer {
     font-size: 1.6em;
-    /* width: 90%;  現在の設定 */
-    width: 95%; /* または 98% など、少し広げてみる */
-    /* あるいは、max-width を設定して固定値にするのも有効 */
-    /* max-width: 500px; */ /* 例えば、PCでは500pxまで広げる */
+    width: 95%; 
      color: black;
     padding: 0px;
+    margin-top: -15px;
     margin-bottom: 0px;
     border: 2px solid #ccc;
     border-radius: 6px;
     background: #f9f9f9;
     display: block;
-    margin: 0 auto;
     color: black;
     text-align: left;
     overflow-x: auto;
@@ -531,7 +528,8 @@ h2.section-title {
     margin: 0 auto;            /* 左右中央寄せ */
     top: -90px;                 /* 必要なら上下位置をここで調整 */
     transform: translateX(0);  /* 中央からのズレ補正をリセット */
-    width: fit-content;        /* 要素の横幅を内容に合わせる */
+    width: fit-content;       /* 要素の横幅を内容に合わせる */
+    margin-bottom: -20px;
 }
 
 #clear-btn {
