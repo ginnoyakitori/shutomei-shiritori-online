@@ -379,7 +379,7 @@ h2.section-title {
 .quiz-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0px;
+    margin-bottom: -50px;
     font-size: 1.2em;
     font-weight: bold;
 }
@@ -387,7 +387,7 @@ h2.section-title {
 #question {
     font-size: 1.9em;
     font-weight: bold;
-    margin-bottom: 0em;
+    margin-bottom: 0px;
     min-height: 60px;
     display: flex;
     align-items: center;
@@ -515,9 +515,11 @@ h2.section-title {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    margin-top: -5px;
+    margin-top: -100px;
     touch-action: none;
-    transform: translateY(-70px);
+    transform: translateZ(0px);
+    transform: translateY(0px);
+    transform: translateX(-40px);
 }
 
 #modify-btn {
@@ -578,7 +580,7 @@ h2.section-title {
     border-radius: 10px;
     background: #cce;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    margin-top: -35px;
+    margin-top: -10px;
     margin-left: auto;
     margin-right: auto;
     transform: translateY(-52px);
