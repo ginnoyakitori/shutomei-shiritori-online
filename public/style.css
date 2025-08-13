@@ -523,11 +523,11 @@ h2.section-title {
     display: flex;
     justify-content: center;   /* 水平方向中央揃え */
     align-items: center;       /* 垂直方向中央揃え */
-    gap: 5px;
+    gap: 2px;
     position: relative;        /* 親要素基準で位置調整可能に */
     margin: 0 auto;            /* 左右中央寄せ */
-    top: -90px;                 /* 必要なら上下位置をここで調整 */
-    transform: translateX(0);  /* 中央からのズレ補正をリセット */
+    top: -92px;                 /* 必要なら上下位置をここで調整 */
+    transform: translateX(-2px);  /* 中央からのズレ補正をリセット */
     width: fit-content;       /* 要素の横幅を内容に合わせる */
     margin-bottom: -20px;
 }
@@ -538,6 +538,7 @@ h2.section-title {
     font-size: 2.5em;
     font-weight: bold;
     border-radius: 10px;
+    transform: translateX(14px);  
     border: none;
     background: #eef;
     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
