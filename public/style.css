@@ -518,7 +518,7 @@ h2.section-title {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 20px;
+    margin-top: 0px;
 }
 
 #submit-btn {
