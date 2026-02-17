@@ -368,7 +368,7 @@ h2.section-title {
 
 /* クイズ画面 */
 .quiz-container {
-    padding: -100px;
+    padding: -200px;
 }
 
 .quiz-header {
@@ -528,7 +528,7 @@ h2.section-title {
     border: none;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     transition: background-color 0.1s ease;
-    margin-bottom: -280px;
+    margin-bottom: -310px;
 }
 
 #submit-btn:active {
