@@ -453,16 +453,16 @@ h2.section-title {
 
 /* --- フリックキーボード全体のコンテナ --- */
 #flick-grid {
-    display: none; /* JSで "grid" に切り替え */
-    grid-template-columns: repeat(3, 1fr); /* 均等な3列 */
-    grid-template-rows: repeat(4, 1fr);    /* 均等な4行 */
-    gap: 10px;          /* ボタン同士の隙間 */
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
     justify-content: center;
     align-content: center;
-    margin: 20px auto;  /* 上下に余白を持たせ中央寄せ */
-    width: 95%;         /* 画面幅に合わせる */
-    max-width: 320px;   /* 大きすぎないように制限 */
-    /* 配置を名前で固定 */
+    /* margin: 20px auto; から変更： 下(bottom)を5pxに、上(top)を10pxに抑える */
+    margin: 10px auto 5px auto; 
+    width: 95%;
+    max-width: 320px;
     grid-template-areas:
         "あ か さ"
         "た な は"
