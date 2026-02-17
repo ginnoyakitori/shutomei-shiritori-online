@@ -1216,17 +1216,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // フリックキーボードのボタンを動的に生成
     
+// フリックキーボードのボタンを動的に生成
 Object.keys(flickData).forEach(base => {
-  // すべてのフリックボタンを createAndAttachFlickBtn で生成し、
-  // 「ワ」ボタンのみ controlRow に挿入、他は flickGrid に挿入
-  const btn = createAndAttachFlickBtn(base);
-  if (base === "わ") {
-    controlRow.insertBefore(btn, document.getElementById("clear-btn"));
-  } else {
+    const btn = createAndAttachFlickBtn(base);
+    // CSSの grid-template-areas で指定する名前をセット
+    btn.style.gridArea = base; 
     flickGrid.appendChild(btn);
-  }
 });
 
+// 元々HTML側に直書きされていた「消去」と「濁点」ボタンを取得
+const clearBtn = document.getElementById("clear-btn");
+const modifyBtn = document.getElementById("modify-btn");
+
+// これらも flickGrid の中に移動させ、gridレイアウトの管理下に置く
+if (modifyBtn) {
+    modifyBtn.style.gridArea = "modify";
+    flickGrid.appendChild(modifyBtn);
+}
+if (clearBtn) {
+    clearBtn.style.gridArea = "clear";
+    flickGrid.appendChild(clearBtn);
+}
     // 初期状態では両方の入力方法を無効化（ユーザー選択を待つ）
     disablePhysicalInput();
     disableFlickInput();
