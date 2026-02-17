@@ -10,13 +10,13 @@ html, body {
 }
 
 body {
-    padding: 20px; /* 全体的なパディング */
-    background-color: #f4f7f6; /* 背景色 */
-    color: #333; /* デフォルト文字色 */
+    padding: 20px 20px 0 20px; /* 下(bottom)のパディングを 0 に変更 */
+    background-color: #f4f7f6;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
+}
 }
 
 /* input, button, select の基本スタイルをリセット */
@@ -28,10 +28,9 @@ input, select { /* buttonは.buttonクラスで定義済みのため除外 */
 }
 
 .container {
-    background-color: #f4f7f6; /* bodyの背景色と同じにして境界線をなくす */
-    padding: 30px;
+    background-color: #f4f7f6;
+    padding: 30px 30px 5px 30px; /* 下(bottom)のパディングを 5px 程度に減らす */
     border-radius: 10px;
-    box-shadow: none; /* box-shadowを削除 */
     max-width: 600px;
     width: 100%;
     margin-bottom: 0px;
@@ -513,12 +512,12 @@ h2.section-title {
 .flick-btn .bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
 .flick-btn .left   { left: 4px;   top: 50%; transform: translateY(-50%); }
 
-/* --- アクションエリア (解答ボタン) --- */
 #quiz-controls-area {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-top: 0px;
+    margin-bottom: 0px; /* 下のマージンを 0 に固定 */
 }
 
 #submit-btn {
