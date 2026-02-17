@@ -863,3 +863,77 @@ document.addEventListener('DOMContentLoaded', () => {
     disableFlickInput();
     submitBtn.style.display = 'none';
 });
+
+/**
+ * 4段目のズレを物理的に解消し、フリックパネルを構築する初期化処理
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // 画面の初期表示設定
+    roomSelectionScreen.style.display = 'block';
+    mainTitle.style.display = 'block';
+    roomLobby.style.display = 'none';
+    quizBox.style.display = 'none';
+    resultBox.style.display = 'none';
+
+    const grid = document.getElementById("flick-grid");
+    const mBtn = document.getElementById("modify-btn");
+    const cBtn = document.getElementById("clear-btn");
+
+    if (grid) {
+        // 一旦中身を空にして順番を保証する
+        grid.innerHTML = '';
+
+        // 1. 「あ」〜「ら」までを順番にGridに追加 (1〜9番目)
+        const mainBases = ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら"];
+        mainBases.forEach(base => {
+            grid.appendChild(createAndAttachFlickBtn(base));
+        });
+
+        // 2. 4段目（最下段）をGridの子要素として直接追加 (10〜12番目)
+        // CSSの grid-template-columns: repeat(3, 1fr) により自動で横に並びます
+        if (mBtn) grid.appendChild(mBtn);           // 左下：濁点/小文字
+        grid.appendChild(createAndAttachFlickBtn("わ")); // 下中央：わ/を/ん
+        if (cBtn) grid.appendChild(cBtn);           // 右下：消去
+
+        // controlRowがGridの外にある場合のレイアウト崩れ防止
+        const controlRow = document.getElementById("control-row");
+        if (controlRow) controlRow.style.display = 'contents';
+    }
+
+    // ゲーム開始前の初期状態
+    disablePhysicalInput();
+    disableFlickInput();
+    if (submitBtn) submitBtn.style.display = 'none';
+});
+
+// ===============================================
+// === 追加のヘルパー関数と安全策 ===
+// ===============================================
+
+/**
+ * サーバーから部屋の状態を強制的に取得する
+ */
+function refreshRoomState() {
+    if (currentRoomId) {
+        socket.emit('getRoomState', { roomId: currentRoomId });
+    }
+}
+
+// ブラウザの「戻る」対策
+window.addEventListener('popstate', () => {
+    if (currentRoomId) {
+        if (confirm('ロビーから退出しますか？')) {
+            socket.emit('leaveRoom', { roomId: currentRoomId });
+        }
+    }
+});
+
+/**
+ * エラーハンドリングの強化
+ */
+socket.on('error', (err) => {
+    console.error('Socket Error:', err);
+    alert('通信エラーが発生しました。');
+});
+
+console.log('Flick Quiz Game Logic Loaded.');
