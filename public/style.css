@@ -455,7 +455,7 @@ h2.section-title {
     justify-content: center;
     align-content: center;
     /* margin: 20px auto; から変更： 下(bottom)を5pxに、上(top)を10pxに抑える */
-    margin: 0px auto 0px auto; 
+    margin: -20px auto 20px auto; 
     width: 95%;
     max-width: 320px;
     grid-template-areas:
