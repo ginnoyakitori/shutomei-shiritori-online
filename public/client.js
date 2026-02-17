@@ -603,9 +603,10 @@ function disableFlickInput() {
  * 選択された入力方法に応じてUIを切り替える
  * @param {string} method - 'flick' または 'keyboard'
  */
+// --- 変更後 ---
 function toggleInputMethodUI(method) {
     if (method === 'flick') {
-        flickGrid.style.display = 'grid'; // 4段目も含めてGridで表示
+        flickGrid.style.display = 'grid'; // これだけで「わ」や「消去」も出る
         answerEl.readOnly = true; 
     } else {
         flickGrid.style.display = 'none';
@@ -642,13 +643,16 @@ joinRoomBtn.addEventListener('click', () => {
     }
 
     const nicknamePrompt = prompt('参加するニックネームを入力してください:');
-    if (nicknamePrompt === null) return;
-    
+    if (nicknamePrompt === null) { // キャンセルされた場合
+        return;
+    }
     myNickname = nicknamePrompt.trim();
     if (!myNickname) {
         alert('ニックネームは必須です。');
         return;
     }
+
+    console.log(`直接参加: 部屋 ${roomId} に ${myNickname} として参加を試みます。`);
     socket.emit('joinRoom', { roomId, nickname: myNickname });
 });
 
@@ -666,274 +670,578 @@ leaveRoomBtn.addEventListener('click', () => {
     currentRoomId = null;
     isHost = false;
     isReady = false;
-    mySelectedInputMethod = null;
-    myInputMethodRadios.forEach(radio => radio.checked = false);
+    mySelectedInputMethod = null; // 入力方法選択をリセット
+    myInputMethodRadios.forEach(radio => radio.checked = false); // ラジオボタンのチェックを外す
 
     roomLobby.style.display = 'none';
     quizBox.style.display = 'none';
     resultBox.style.display = 'none';
-    roomSelectionScreen.style.display = 'block';
-    mainTitle.style.display = 'block';
+    roomSelectionScreen.style.display = 'block'; // 部屋選択画面に戻る
+    mainTitle.style.display = 'block'; // メインタイトルも表示に戻す
 });
 
+// クイズタイプ選択ボタン
+selectKokumeiBtn.addEventListener('click', () => selectQuizType('kokumei'));
+selectShutomeiBtn.addEventListener('click', () => selectQuizType('shutomei'));
+
+/**
+ * クイズタイプを選択し、サーバーに通知する
+ * @param {string} type - 'kokumei' または 'shutomei'
+ */
 function selectQuizType(type) {
-    let fileName = type === 'kokumei' ? 'kokumei.csv' : 'shutomei.csv';
-    let displayName = type === 'kokumei' ? '国名しりとり' : '首都名しりとり';
-    selectedQuizSet = type;
+    let fileName = '';
+    let displayName = '';
+    let setName = '';
+    if (type === 'kokumei') {
+        fileName = 'kokumei.csv';
+        displayName = '国名しりとり';
+        setName = 'kokumei';
+    } else if (type === 'shutomei') {
+        fileName = 'shutomei.csv';
+        displayName = '首都名しりとり';
+        setName = 'shutomei';
+    }
+    selectedQuizSet = setName;
     selectedQuizTitle = displayName;
     selectedQuizDisplay.textContent = ` ${displayName}`;
-    socket.emit('selectQuizType', { roomId: currentRoomId, quizFile: fileName, quizTitle: displayName, quizSet: type });
+    socket.emit('selectQuizType', { roomId: currentRoomId, quizFile: fileName, quizTitle: displayName, quizSet: setName });
 }
 
+// 部屋の公開/非公開切り替えボタン
 toggleVisibilityBtn.addEventListener('click', () => {
     socket.emit('toggleRoomVisibility', { roomId: currentRoomId });
 });
 
+// ゲーム開始ボタン
 startGameBtn.addEventListener('click', () => {
     if (!selectedQuizSet) {
         alert('クイズタイプを選択してください。');
         return;
     }
+    // 問題数を1に固定してゲーム開始イベントを送信
     socket.emit('startGame', { roomId: currentRoomId, quizSet: selectedQuizSet, quizTitle: selectedQuizTitle, numQuestions: 1 });
 });
 
+// 入力方法ラジオボタンの変更イベントリスナー
 myInputMethodRadios.forEach(radio => {
-    radio.addEventListener('change', (event) => {
-        mySelectedInputMethod = event.target.value;
-        socket.emit('setPlayerInputMethod', { roomId: currentRoomId, method: mySelectedInputMethod });
-        toggleInputMethodUI(mySelectedInputMethod);
+  radio.addEventListener('change', (event) => {
+    mySelectedInputMethod = event.target.value;
+    socket.emit('setPlayerInputMethod', {
+      roomId: currentRoomId,
+      method: mySelectedInputMethod
     });
+    console.log(`My input method set to: ${mySelectedInputMethod}`);
+    toggleInputMethodUI(mySelectedInputMethod); // 入力UIをフリック/キーボードに切り替え
+  });
 });
 
+/**
+ * ロビー画面を表示し、UIの状態を更新する
+ * @param {Object} room - 部屋の最新の状態オブジェクト
+ */
 function showLobby(room) {
     roomSelectionScreen.style.display = 'none';
     mainTitle.style.display = 'none';
     quizBox.style.display = 'none';
     resultBox.style.display = 'none';
     roomLobby.style.display = 'block';
+
+    // 自分の入力方法選択部分を常に表示
     playerInputMethodSelection.style.display = 'block';
 
+    // ロビーに戻ったときに、現在の自分の選択を反映させる
     if (mySelectedInputMethod) {
         toggleInputMethodUI(mySelectedInputMethod);
     } else {
+        // まだ選択されていない場合、デフォルトの 'keyboard' を適用
         toggleInputMethodUI('keyboard');
-        const kbRadio = document.querySelector('input[name="myInputMethod"][value="keyboard"]');
-        if (kbRadio) kbRadio.checked = true;
-        mySelectedInputMethod = 'keyboard';
+        // ラジオボタンも 'keyboard' をチェック状態にする
+        document.querySelector('input[name="myInputMethod"][value="keyboard"]').checked = true;
+        mySelectedInputMethod = 'keyboard'; // mySelectedInputMethodも更新
     }
 
     if (isHost) {
         selectKokumeiBtn.disabled = false;
         selectShutomeiBtn.disabled = false;
-        setReadyBtn.style.display = 'none';
+        setReadyBtn.style.display = 'none'; // ホストは「準備完了」ボタン不要
     } else {
         selectKokumeiBtn.disabled = true;
         selectShutomeiBtn.disabled = true;
-        setReadyBtn.style.display = 'inline-block';
+        setReadyBtn.style.display = 'inline-block'; // 参加者は「準備完了」ボタンを表示
     }
+    socket.emit('getRoomState', { roomId: room.id }); // 最新の部屋の状態を要求
 }
+
+// ニックネーム入力フィールドと部屋ID入力フィールドにフォーカスが当たった際の物理キーボードイベントリスナーの切り替え
+createNicknameInput.addEventListener('focus', () => {
+    // 入力中は物理キーボードのイベントリスナーを一時的に無効化
+    document.removeEventListener("keydown", physicalInputKeydownHandler);
+});
+createNicknameInput.addEventListener('blur', () => {
+    // 部屋に入ってゲームボックスが表示されていて、かつキーボード入力モードの場合のみ再有効化
+    if (quizBox.style.display === "block" && mySelectedInputMethod === "keyboard") {
+        document.addEventListener("keydown", physicalInputKeydownHandler);
+    }
+});
+joinRoomIdInput.addEventListener('focus', () => {
+    document.removeEventListener("keydown", physicalInputKeydownHandler);
+});
+joinRoomIdInput.addEventListener('blur', () => {
+    if (quizBox.style.display === "block" && mySelectedInputMethod === "keyboard") {
+        document.addEventListener("keydown", physicalInputKeydownHandler);
+    }
+});
 
 // ===============================================
 // === Socket.IOイベントハンドラ ===
 // ===============================================
 
-socket.on('roomState', (room) => {
-    lobbyRoomName.textContent = room.name;
-    lobbyRoomId.textContent = room.id;
-    playersInRoomList.innerHTML = '';
-    const ul = document.createElement('ul');
-    room.players.forEach(p => {
-        const li = document.createElement('li');
-        const status = p.isReady ? ' [OK]' : (p.id === room.hostId ? ' [Host]' : ' [..]');
-        const icon = p.inputMethod === 'flick' ? '📱' : '⌨️';
-        li.textContent = `${icon} ${p.nickname}${status}`;
-        ul.appendChild(li);
-    });
-    playersInRoomList.appendChild(ul);
-    isHost = (socket.id === room.hostId);
-    hostControls.style.display = isHost ? 'block' : 'none';
-    if (isHost) startGameBtn.disabled = !(room.players.every(p => p.id === room.hostId || p.isReady) && room.selectedQuizSet);
-    if (room.selectedQuizTitle) selectedQuizDisplay.textContent = ` ${room.selectedQuizTitle}`;
-    toggleVisibilityBtn.textContent = room.isVisible ? "部屋を非表示にする" : "部屋を表示する";
+// サーバー接続時
+socket.on('connect', () => {
+    console.log('Connected to server');
 });
 
+// サーバー切断時
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+    currentRoomId = null;
+    isHost = false;
+    isReady = false;
+    mySelectedInputMethod = null;
+    myInputMethodRadios.forEach(radio => radio.checked = false); // ラジオボタンのチェックを外す
+
+    roomLobby.style.display = 'none';
+    quizBox.style.display = 'none';
+    resultBox.style.display = 'none';
+    roomSelectionScreen.style.display = 'block';
+    mainTitle.style.display = 'block';
+});
+socket.on('quizModeSelected', (mode) => {
+    // HTMLにID 'quiz-mode-display' が追加されたことを想定して修正
+    const quizModeDisplay = document.getElementById('quiz-mode-display');
+    let modeText = '';
+    if (mode === 'kokumei') {
+        modeText = '国名しりとり';
+    } else if (mode === 'shutomei') {
+        modeText = '首都名しりとり';
+    } else {
+        modeText = '未選択';
+    }
+
+    // 要素が存在するか安全に確認
+    if (quizModeDisplay) {
+        quizModeDisplay.textContent = `しりとりモード: ${modeText}`;
+    }
+});
+
+// 部屋リスト更新時
+socket.on('roomList', (roomsData) => {
+    console.log('--- roomList イベントを受信しました');
+    console.log('受信した部屋リスト:', roomsData);
+
+    // ... (省略) ...
+});
+
+// 部屋作成成功時
 socket.on('roomCreated', (room) => {
+    console.log('Room created:', room);
     currentRoomId = room.id;
     isHost = true;
     showLobby(room);
+    alert(`部屋 ${room.id} が作成されました。`); // 部屋作成の通知
 });
 
+// 部屋参加成功時
 socket.on('joinedRoom', (room) => {
+    console.log('Joined room:', room);
     currentRoomId = room.id;
-    isHost = (room.hostId === socket.id);
-    showLobby(room);
-});
+    isHost = room.hostId === socket.id; // 再度ホストかどうか確認
+    showLobby(room); // ロビー表示関数を呼び出し
 
-socket.on('gameStarted', (data) => {
-    roomLobby.style.display = 'none';
-    quizBox.style.display = 'block';
-    questions = data.questions;
-    current = 0;
-    answerEl.value = "";
-    romajiBuffer = "";
-    feedbackEl.textContent = "";
-    
-    if (mySelectedInputMethod === 'flick') {
-        enableFlickInput();
-        disablePhysicalInput();
+    if (room.isPlaying && room.gameStartTime) {
+        gameStartTimeOffset = performance.now() - (Date.now() - room.gameStartTime);
+        console.log(`Joined game in progress. My time offset: ${gameStartTimeOffset}`);
     } else {
-        disableFlickInput();
-        enablePhysicalInput();
+        gameStartTimeOffset = 0;
     }
-    
-    showQuestion();
-    startTime = performance.now();
-    intervalId = setInterval(updateTimer, 10);
-});
 
-function showQuestion() {
-    questionEl.textContent = questions[current].q;
-    questionNumberEl.textContent = `${current + 1} / ${questions.length}`;
-}
-
-function updateTimer() {
-    timerEl.textContent = ((performance.now() - startTime) / 1000).toFixed(2) + "秒";
-}
-
-submitBtn.addEventListener('click', () => {
-    const ans = answerEl.value.trim();
-    if (!ans) return;
-    socket.emit('submitAnswer', { roomId: currentRoomId, answer: ans, time: (performance.now() - startTime) / 1000 });
-});
-
-socket.on('answerResult', (data) => {
-    if (data.isCorrect) {
-        feedbackEl.textContent = "正解！";
-        feedbackEl.style.color = "green";
-        clearInterval(intervalId);
-        disableFlickInput();
-        disablePhysicalInput();
+    // 自分のプレイヤー情報から入力方法を初期設定（再接続時など）
+    const myPlayer = room.players.find(p => p.id === socket.id);
+    if (myPlayer && myPlayer.inputMethod) {
+        mySelectedInputMethod = myPlayer.inputMethod;
+        myInputMethodRadios.forEach(radio => {
+            if (radio.value === mySelectedInputMethod) {
+                radio.checked = true;
+            }
+        });
+        // ロビーで自分の入力方法の設定部分を表示
+        playerInputMethodSelection.style.display = 'block';
+        toggleInputMethodUI(mySelectedInputMethod); // UIも更新
     } else {
-        feedbackEl.textContent = "不正解！";
-        feedbackEl.style.color = "red";
-        setTimeout(() => feedbackEl.textContent = "", 1000);
+        // まだ入力方法が設定されていない場合、ラジオボタンを初期化
+        myInputMethodRadios.forEach(radio => radio.checked = false);
+        // ロビーで自分の入力方法の設定部分を表示
+        playerInputMethodSelection.style.display = 'block';
+        // どちらも選択されていない状態なので、デフォルトで物理キーボードを表示
+        toggleInputMethodUI('keyboard');
+        mySelectedInputMethod = 'keyboard'; // 内部状態もデフォルトに設定
+        document.querySelector('input[name="myInputMethod"][value="keyboard"]').checked = true; // デフォルトをチェック
     }
 });
 
-socket.on('gameResults', (results) => {
-    quizBox.style.display = 'none';
-    resultBox.style.display = 'block';
-    finalScoresList.innerHTML = '';
-    results.sort((a, b) => a.time - b.time).forEach((res, i) => {
+// 部屋関連のエラー発生時
+socket.on('roomError', (message) => {
+    alert('エラー: ' + message);
+    if (!currentRoomId) { // エラーで部屋に入れなかった場合、部屋選択画面に戻す
+        roomLobby.style.display = 'none';
+        roomSelectionScreen.style.display = 'block';
+        mainTitle.style.display = 'block';
+    }
+});
+
+socket.on('roomStateUpdate', (room) => {
+    console.log('Room state updated:', room);
+    isHost = room.hostId === socket.id;
+
+    // 自分のプレイヤー情報を見つけ、isReadyの状態をグローバル変数に同期する
+    const myPlayer = room.players.find(p => p.id === socket.id);
+    if (myPlayer) {
+        isReady = myPlayer.isReady; // グローバル変数 isReady を更新
+    }
+
+    playersInRoomList.innerHTML = '<h3></h3><ul></ul>';
+    const ul = playersInRoomList.querySelector('ul');
+    room.players.forEach(player => {
         const li = document.createElement('li');
-        if (i === 0) li.className = 'fastest-player';
-        li.innerHTML = `<span>${i + 1}位: ${res.nickname}</span><span>${res.time.toFixed(2)}秒</span>`;
-        finalScoresList.appendChild(li);
+        li.innerHTML = `
+    <div class="player-info">
+      <span class="player-name ${player.isHost ? 'host-name' : ''}">${player.nickname}</span>
+      <span class="player-status ${player.isReady ? 'ready' : ''} ${player.isHost ? 'hidden' : ''}">
+          ${player.isReady ? '準備OK' : '未準備'}
+      </span>
+    </div>
+          <span class="player-score"> ${player.wins || 0}勝</span>
+          <span class="player-input-method">${player.inputMethod ? (player.inputMethod === 'flick' ? 'フリック' : 'キーボード') : '未選択'}</span>
+        `;
+        ul.appendChild(li);
     });
-});
+    if (isHost) {
+        hostControls.style.display = 'block';
+        lobbyRoomName.textContent = ` ${room.name} `;
+        lobbyRoomId.textContent = room.id;
 
-returnToLobbyBtn.addEventListener('click', () => socket.emit('returnToLobby', { roomId: currentRoomId }));
-socket.on('returnedToLobby', () => {
-    isReady = false;
-    setReadyBtn.textContent = '準備完了';
-    showLobby({ id: currentRoomId });
-});
+        // ホストになった場合、部屋の現在のクイズ設定をクライアント側の変数に同期する
+        selectedQuizSet = room.quizSet;
+        selectedQuizTitle = room.quizTitle;
 
+        // クイズタイプ選択ボタンを有効にする
+        selectKokumeiBtn.disabled = false;
+        selectShutomeiBtn.disabled = false;
+
+        selectKokumeiBtn.classList.remove('selected');
+        selectShutomeiBtn.classList.remove('selected');
+
+        if (room.quizFile === 'kokumei.csv') {
+            selectKokumeiBtn.classList.add('selected');
+        } else if (room.quizFile === 'shutomei.csv') {
+            selectShutomeiBtn.classList.add('selected');
+        }
+        selectedQuizDisplay.textContent = room.quizFile ? ` ${room.quizTitle}` : 'クイズ未選択';
+
+        const allReady = room.players.length > 0 && room.players.every(p => p.isReady || p.isHost);
+        // ゲーム開始ボタンのdisabled状態を更新（room.quizFileが設定されていればdisabled解除されるはず）
+        startGameBtn.disabled = !allReady || !room.quizFile;
+
+        toggleVisibilityBtn.textContent = room.isVisible ? '部屋を非表示にする' : '部屋を公開する';
+        setReadyBtn.style.display = 'none'; // ホストは準備ボタン不要
+    } else { // ホストではない場合
+        hostControls.style.display = 'none';
+        lobbyRoomName.textContent = ` ${room.name}`;
+        lobbyRoomId.textContent = room.id;
+
+        // isReady グローバル変数が更新されたので、それに従ってボタンの表示を更新
+        setReadyBtn.textContent = isReady ? '準備OK！ (解除)' : '準備完了';
+        setReadyBtn.classList.toggle('ready', isReady);
+
+        setReadyBtn.style.display = 'inline-block'; // 参加者は準備ボタンを表示
+        selectedQuizDisplay.textContent = room.quizFile ? `${room.quizTitle}` : 'クイズ未選択';
+        playerInputMethodSelection.style.display = 'block';
+
+        selectKokumeiBtn.disabled = true;
+        selectShutomeiBtn.disabled = true;
+    }
+});// ===============================================
+// === ゲーム進行ロジック ===
 // ===============================================
-// === 初期化 (DOMContentLoaded) ===
-// ===============================================
-document.addEventListener('DOMContentLoaded', () => {
-    roomSelectionScreen.style.display = 'block';
-    mainTitle.style.display = 'block';
 
-    const grid = document.getElementById("flick-grid");
-    const mBtn = document.getElementById("modify-btn");
-    const cBtn = document.getElementById("clear-btn");
+// ゲーム開始イベント
+socket.on('gameStarted', (gameData) => {
+    console.log('Game started! Initial data:', gameData);
+    questions = gameData.questions;
+    selectedQuizSet = gameData.quizSet;
+    selectedQuizTitle = gameData.quizTitle;
 
-    grid.innerHTML = '';
-    ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら"].forEach(b => grid.appendChild(createAndAttachFlickBtn(b)));
-    
-    // 4段目をGridに直接追加して物理的に整列させる
-    grid.appendChild(mBtn);
-    grid.appendChild(createAndAttachFlickBtn("わ"));
-    grid.appendChild(cBtn);
+    // mySelectedInputMethod がまだ設定されていなければ、サーバーからの情報かデフォルトを適用
+    if (!mySelectedInputMethod) {
+        mySelectedInputMethod = gameData.inputMethod || "keyboard";
+        const radio = document.querySelector(`input[name="myInputMethod"][value="${mySelectedInputMethod}"]`);
+        if (radio) radio.checked = true;
+    }
 
-    if (controlRow) controlRow.style.display = 'contents';
-    disablePhysicalInput();
-    disableFlickInput();
-    submitBtn.style.display = 'none';
+    roomSelectionScreen.style.display = "none";
+    roomLobby.style.display = "none";
+    quizBox.style.display = "block";
+    mainTitle.style.display = "none"; // ゲーム開始時もメインタイトルは非表示
+    current = 0; // 現在の問題番号をリセット (1問固定なので実質0)
+    correctCount = 0; // そのラウンドの正解数をリセット
+
+    // startTime は joinedRoom で設定された gameStartTimeOffset を使用して計算
+    if (gameStartTimeOffset !== 0) {
+        startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now())) + gameStartTimeOffset;
+    } else {
+        startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now()));
+    }
+    console.log(`My game startTime: ${new Date(Date.now() - (performance.now() - startTime)).toLocaleTimeString()}`);
+    clearInterval(intervalId); // 既存のタイマーがあればクリア
+    intervalId = setInterval(updateTimer, 10); // タイマー開始
+    showQuestion(); // 質問表示と入力モードの設定はここで処理される
+
+    // 入力モードに応じてUIを切り替える
+    if (mySelectedInputMethod === "flick") {
+        enableFlickInput();
+        questionEl.style.fontSize = "1.5em"; // フリック入力時のフォントサイズ
+    } else { // 'keyboard'
+        enablePhysicalInput();
+        questionEl.style.fontSize = "2.5em"; // 物理キーボード時のフォントサイズ
+    }
+    answerEl.disabled = false; // 回答欄を有効化
+    // submitBtn.disabled の制御は、個々の入力方法の enable/disable 関数に任せる
 });
 
 /**
- * 4段目のズレを物理的に解消し、フリックパネルを構築する初期化処理
+ * タイマーを更新する
  */
+function updateTimer() {
+    const now = performance.now();
+    const diff = ((now - startTime) / 1000).toFixed(2);
+    timerEl.textContent = `${diff}秒`;
+}
+
+/**
+ * 問題を表示する
+ */
+function showQuestion() {
+    if (questions.length > 0) { // 質問データが空でないことを確認
+        questionEl.textContent = questions[0].q; // 常に最初の質問を表示
+        questionNumberEl.textContent = `1 / 1`; // 問題数を1/1に固定
+        answerEl.value = "";
+        feedbackEl.textContent = ""; // フィードバックをクリア
+
+        if (mySelectedInputMethod === "keyboard") {
+            romajiBuffer = ""; // ローマ字バッファをクリア
+            answerEl.focus(); // フォーカスを当てる
+        } else if (mySelectedInputMethod === "flick") {
+            // フリック入力の場合、romajiBufferは使用しない
+        }
+    } else {
+        // 問題がない場合のフォールバック
+        disablePhysicalInput(); // 両方の入力UIを無効化
+        disableFlickInput(); // 両方の入力UIを無効化
+        submitBtn.style.display = 'none'; // 問題がない場合は解答ボタンも非表示
+
+        feedbackEl.textContent = '問題がありません。';
+        questionEl.textContent = '問題データの読み込みエラー、または未設定です。';
+        clearInterval(intervalId);
+    }
+}
+
+// 解答ボタンクリック時
+submitBtn.onclick = () => {
+    const ans = answerEl.value.trim();
+    // 常に questions[0] と比較
+    if (ans === questions[0].a) {
+        feedbackEl.textContent = "正解！";
+        correctCount = 1; // 1問なので正解したらスコアは1
+        clearInterval(intervalId); // 正解したらタイマー停止
+        const finalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+        // サーバーに正解と回答時間を送信
+        socket.emit('playerFinished', { roomId: currentRoomId, finalTime: finalTime, score: correctCount });
+        // 正解したら入力フィールドとボタンを無効化 (他のプレイヤーの正解を待つ)
+        answerEl.disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.style.display = 'none'; // 解答ボタンを非表示にする（フリックの場合も）
+
+        // どちらの入力方法でも、ゲーム終了時は入力UIを無効化
+        disablePhysicalInput(); // これが呼ばれると answerEl.style.display は none になる
+        disableFlickInput();
+    } else {
+        feedbackEl.textContent = "不正解...";
+        correctCount = 0; // 不正解ならスコアは0
+        answerEl.focus(); // 再度入力できるようにフォーカス
+        // 不正解の場合、タイマーは継続
+    }
+};
+
+// ゲーム終了イベント
+socket.on('gameFinished', (data) => {
+    console.log('Game finished event received:', data);
+    clearInterval(intervalId); // タイマー停止
+
+    // 入力フィールドとボタンの状態をリセット（結果表示後にロビーに戻ることを想定）
+    answerEl.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.style.display = 'none'; // ゲーム終了時は解答ボタンを非表示に
+
+    quizBox.style.display = "none";
+    resultBox.style.display = "block";
+    mainTitle.style.display = "none"; // クイズ終了時もメインタイトルは非表示
+    finalScoresList.innerHTML = '';
+
+    // その問題の解答を表示
+    if (questions.length > 0) {
+        const questionAnswerHeader = document.createElement('h3');
+        finalScoresList.appendChild(questionAnswerHeader);
+        const questionItem = document.createElement('p');
+        questionItem.innerHTML = `問題: ${questions[0].q}<br>解答: ${questions[0].a}`;
+        questionItem.style.fontWeight = 'bold';
+        questionItem.style.marginBottom = '10px';
+        finalScoresList.appendChild(questionItem);
+    }
+
+    // 回答時間でソートし、最も早い人を強調
+    const sortedPlayers = data.players.sort((a, b) => {
+        const timeA = a.finalTime !== null && a.finalTime !== undefined ? parseFloat(a.finalTime) : Infinity;
+        const timeB = b.finalTime !== null && b.finalTime !== undefined ? parseFloat(b.finalTime) : Infinity;
+
+        // 正解者優先、次に時間でソート
+        if (a.score > b.score) return -1;
+        if (a.score < b.score) return 1;
+
+        return timeA - timeB;
+    });
+
+    // 最も早かったプレイヤーを特定 (正解者の中から)
+    let fastestPlayer = null;
+    let minTime = Infinity;
+    for (const player of sortedPlayers) {
+        if (player.score === 1 && player.finalTime !== null && player.finalTime !== undefined) {
+            const time = parseFloat(player.finalTime);
+            if (time < minTime) {
+                minTime = time;
+                fastestPlayer = player;
+            }
+        }
+    }
+
+    // 正解者の表示
+    const correctPlayers = sortedPlayers.filter(p => p.score === 1);
+    if (correctPlayers.length > 0) {
+        const correctHeader = document.createElement('h3');
+        correctHeader.textContent = '正解者:';
+        finalScoresList.appendChild(correctHeader);
+        correctPlayers.forEach(player => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="player-name">${player.nickname}</span>
+                <span class="player-final-time">${player.finalTime ? `${player.finalTime}秒` : '---'}</span>
+            `;
+            if (fastestPlayer && player.id === fastestPlayer.id) {
+                li.classList.add('fastest-player');
+                li.innerHTML = `<span class="fastest-badge">🏆</span>` + li.innerHTML;
+            }
+            finalScoresList.appendChild(li);
+        });
+    }
+
+    // 不正解者の表示
+    const incorrectPlayers = sortedPlayers.filter(p => p.score === 0);
+    if (incorrectPlayers.length > 0) {
+        const incorrectHeader = document.createElement('h3');
+        incorrectHeader.textContent = '（不正解・未回答者）';
+        finalScoresList.appendChild(incorrectHeader);
+        incorrectPlayers.forEach(player => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="player-name">${player.nickname}</span>
+                <span class="player-final-time">未回答</span>
+            `;
+            finalScoresList.appendChild(li);
+        });
+    }
+});
+
+// ロビーに戻るボタン
+returnToLobbyBtn.addEventListener('click', () => {
+    resultBox.style.display = 'none';
+    roomLobby.style.display = 'block';
+    mainTitle.style.display = 'none';
+    socket.emit('returnToLobby', { roomId: currentRoomId });
+    isReady = false; // 準備状態をリセット
+    setReadyBtn.textContent = '準備完了';
+    setReadyBtn.classList.remove('ready');
+
+    answerEl.value = ''; // 回答をクリア
+    feedbackEl.textContent = '';
+    questionEl.textContent = '';
+    submitBtn.style.display = 'none'; // ロビーに戻る際も解答ボタンは非表示に
+
+    // ロビーに戻る際は、mySelectedInputMethod の状態に応じてUIを切り替える
+    // showLobby 関数内で playerInputMethodSelection の表示と toggleInputMethodUI が適切に処理される
+});
+
+// ===============================================
+// === 初期処理とフリックキーボードDOM生成 ===
+// ===============================================
+
+/**
+ * 配列をシャッフルする (現在のクイズが1問固定のため、直接は使われない)
+ * @param {Array} array - シャッフルする配列
+ * @returns {Array} シャッフルされた新しい配列
+ */
+function shuffleArray(array) {
+    const newArray = Array.from(array);
+    return newArray.sort(() => Math.random() - 0.5);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 画面の初期表示設定
     roomSelectionScreen.style.display = 'block';
     mainTitle.style.display = 'block';
     roomLobby.style.display = 'none';
     quizBox.style.display = 'none';
     resultBox.style.display = 'none';
 
+    // フリックキーボードのボタンを動的に生成
+    // --- 変更後 ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 既存の画面切り替え処理
+    roomSelectionScreen.style.display = 'block';
+    mainTitle.style.display = 'block';
+
     const grid = document.getElementById("flick-grid");
-    const mBtn = document.getElementById("modify-btn");
-    const cBtn = document.getElementById("clear-btn");
+    const modifyBtn = document.getElementById("modify-btn");
+    const clearBtn = document.getElementById("clear-btn");
 
-    if (grid) {
-        // 一旦中身を空にして順番を保証する
-        grid.innerHTML = '';
+    // 1. グリッド内をリセット（重複防止）
+    grid.innerHTML = '';
 
-        // 1. 「あ」〜「ら」までを順番にGridに追加 (1〜9番目)
-        const mainBases = ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら"];
-        mainBases.forEach(base => {
-            grid.appendChild(createAndAttachFlickBtn(base));
-        });
+    // 2. 1段目〜3段目（あ・か・さ・た・な・は・ま・や・ら）を順番に追加
+    const mainBases = ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら"];
+    mainBases.forEach(base => {
+        grid.appendChild(createAndAttachFlickBtn(base));
+    });
 
-        // 2. 4段目（最下段）をGridの子要素として直接追加 (10〜12番目)
-        // CSSの grid-template-columns: repeat(3, 1fr) により自動で横に並びます
-        if (mBtn) grid.appendChild(mBtn);           // 左下：濁点/小文字
-        grid.appendChild(createAndAttachFlickBtn("わ")); // 下中央：わ/を/ん
-        if (cBtn) grid.appendChild(cBtn);           // 右下：消去
+    // 3. 4段目（一番下の列）を左から順に追加
+    // これにより、CSSのGridレイアウトが自動的に左下・下中・右下に配置します
+    grid.appendChild(modifyBtn);                 // 10番目：左下 (濁点/小文字)
+    grid.appendChild(createAndAttachFlickBtn("わ")); // 11番目：下中央 (わ/を/ん)
+    grid.appendChild(clearBtn);                  // 12番目：右下 (消去)
 
-        // controlRowがGridの外にある場合のレイアウト崩れ防止
-        const controlRow = document.getElementById("control-row");
-        if (controlRow) controlRow.style.display = 'contents';
-    }
+    // 以前の controlRow 自体は Grid の邪魔をしないように無効化
+    const controlRow = document.getElementById("control-row");
+    if (controlRow) controlRow.style.display = 'contents';
 
-    // ゲーム開始前の初期状態
+    // 初期状態の無効化処理
     disablePhysicalInput();
     disableFlickInput();
-    if (submitBtn) submitBtn.style.display = 'none';
+    submitBtn.style.display = 'none';
 });
-
-// ===============================================
-// === 追加のヘルパー関数と安全策 ===
-// ===============================================
-
-/**
- * サーバーから部屋の状態を強制的に取得する
- */
-function refreshRoomState() {
-    if (currentRoomId) {
-        socket.emit('getRoomState', { roomId: currentRoomId });
-    }
-}
-
-// ブラウザの「戻る」対策
-window.addEventListener('popstate', () => {
-    if (currentRoomId) {
-        if (confirm('ロビーから退出しますか？')) {
-            socket.emit('leaveRoom', { roomId: currentRoomId });
-        }
-    }
-});
-
-/**
- * エラーハンドリングの強化
- */
-socket.on('error', (err) => {
-    console.error('Socket Error:', err);
-    alert('通信エラーが発生しました。');
-});
-
-console.log('Flick Quiz Game Logic Loaded.');
