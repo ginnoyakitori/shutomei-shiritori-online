@@ -1,79 +1,111 @@
-/* ===============================================
-   全体設定
-   =============================================== */
+/* public/style.css */
+
 html, body {
     overscroll-behavior: none;
     touch-action: manipulation;
     margin: 0;
     padding: 0;
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    font-family: sans-serif;
     text-align: center;
 }
 
 body {
-    padding: 20px;
-    background-color: #f4f7f6;
-    color: #333;
+    padding: 20px; /* 全体的なパディング */
+    background-color: #f4f7f6; /* 背景色 */
+    color: #333; /* デフォルト文字色 */
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
 }
 
-/* ===============================================
-   共通コンテナ & タイトル
-   =============================================== */
+/* input, button, select の基本スタイルをリセット */
+input, select { /* buttonは.buttonクラスで定義済みのため除外 */
+    font-size: 1rem;
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box; /* パディングとボーダーを幅に含める */
+}
+
 .container {
-    padding: 20px;
+    background-color: #f4f7f6; /* bodyの背景色と同じにして境界線をなくす */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: none; /* box-shadowを削除 */
     max-width: 600px;
     width: 100%;
-    box-sizing: border-box;
+    margin-bottom: 0px;
 }
 
 h1#main-title {
     color: #007bff;
-    margin: 0 0 20px 0;
-    font-size: 1.8em;
+    margin-bottom: 0px;
+    font-size: 2.2em;
+    text-align: center;
 }
 
 h2.section-title {
     color: #007bff;
-    margin: 20px 0 10px 0;
-    font-size: 1.4em;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    font-size: 1.6em;
 }
 
-/* ===============================================
-   ボタン & 入力フォーム
-   =============================================== */
+.section-description {
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 0px;
+}
+
+/* ボタンの基本スタイル */
 .button {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 12px 20px;
+    padding: 12px 25px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
-    font-weight: bold;
-    transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    margin: 0px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.button:active {
-    transform: translateY(1px);
-    box-shadow: none;
+.button:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .button:disabled {
-    background-color: #ccc;
+    background-color: #cccccc;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
-.primary-button { background-color: #28a745; }
-.secondary-button { background-color: #6c757d; }
-.alert-button { background-color: #dc3545; }
+.primary-button {
+    background-color: #28a745;
+}
+.primary-button:hover {
+    background-color: #218838;
+}
 
+.secondary-button {
+    background-color: #6c757d;
+}
+.secondary-button:hover {
+    background-color: #5a6268;
+}
+
+.alert-button {
+    background-color: #dc3545;
+}
+.alert-button:hover {
+    background-color: #c82333;
+}
+
+/* 入力フィールド */
 .input-field {
-    width: 100%;
+    width: calc(100% - 20px);
     padding: 12px;
     margin: 8px 0;
     border: 1px solid #ced4da;
@@ -81,57 +113,283 @@ h2.section-title {
     box-sizing: border-box;
     font-size: 1.1em;
 }
-
-/* ===============================================
-   部屋選択 & プレイヤーリスト
-   =============================================== */
-.room-list-container {
-    background-color: #fff;
-    border-radius: 8px;
-    max-height: 250px;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+.input-field::placeholder {
+    color: #a0a0a0;
 }
 
+/* 部屋選択画面 */
+#room-selection-screen .room-actions {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+#room-selection-screen .create-room-section,
+#room-selection-screen .join-room-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 0px;
+}
+
+#room-selection-screen .create-room-section .input-field,
+#room-selection-screen .join-room-section .input-field {
+    flex-grow: 1;
+    min-width: 180px;
+}
+
+#room-selection-screen .create-room-section button,
+#room-selection-screen .join-room-section button {
+    flex-shrink: 0;
+}
+
+/* 部屋リストのコンテナ */
+.room-list-container {
+    border:  none ;
+    border-radius: 8px;
+    padding: 0px;
+    background-color: #f9f9f9;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 部屋リストのUL要素 */
 #room-list-ul {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: 100%;
+}
+
+/* 各部屋のアイテム (最も優先される定義に統合) */
+/* 部屋リストの各アイテム（li要素）に適用されている境界線を削除 */
+#room-list-ul li {
+    border: none; /* 枠線を完全に消す */
+    box-shadow: none; /* もし影が原因であれば影も消す */
+    /* background-color: #f0f0f0; /* 明るい白（グレー）または交互の背景色設定をここに */
+}
+
+/* 部屋が見つからない時の表示も同様に境界線を削除 */
+#room-list-ul .no-rooms {
+    border: none; /* 枠線を完全に消す */
+    box-shadow: none; /* もし影が原因であれば影も消す */
+    text-align: center;
+    color: #888;
+    padding: 20px;
 }
 
 .room-item {
+    /* 以前の#room-list-ul liからの重複定義を整理 */
+    background-color: #ffffff; /* 元のroom-itemの背景色 */
+    /* border: 1px solid #d0d0d0; ここでボーダーを定義している場合、上記#room-list-ul liで上書きされる */
+    border-radius: 8px;
+    padding: 10px; /* ここでパディングをしっかり設定 */
+    margin-bottom: 10px; /* 各アイテム間の余白 */
+    text-align: left; /* テキスト左寄せ */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    
+    /* 横並びにするためのFlexboxプロパティ */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
+    justify-content: space-between; /* 要素を両端に寄せる */
+    align-items: center; /* 垂直方向の中央揃え */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 新しいシャドウ */
+}
+
+.room-item:hover {
+    background-color: #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.room-item.full {
+    background-color: #f8d7da;
+    color: #721c24;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.room-item.playing {
+    background-color: #fff3cd;
+    color: #856404;
+    cursor: default; /* ゲーム中はクリックできないためdefaultに */
+    opacity: 0.9;
+}
+
+/* 部屋情報部分 */
+.room-info {
+    flex-grow: 1; /* 部屋情報が利用可能なスペースを占めるようにする */
+    margin-right: 0px; /* ボタンとの間にスペースを開ける */
+}
+
+.room-name {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #333; /* デフォルトの文字色 */
+}
+
+.room-host, .room-players {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* 部屋アクション（ボタン）部分 */
+.room-item .room-actions { /* 親セレクタを追加 */
+    flex-shrink: 0; /* ボタンが縮まないようにする */
+}
+
+.join-room-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+
+.join-room-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.join-room-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+/* ロビー画面 */
+#room-lobby h2, #room-lobby p {
+    margin-bottom: 0px;
 }
 
 .players-list {
-    background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    margin-bottom: 0px;
+    max-height: 250px;
+    overflow-y: auto;
 }
 
-.players-list ul { list-style: none; padding: 0; margin: 0; }
+.players-list ul {
+    list-style: none;
+    padding: 0;
+}
+
 .players-list li {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #e9ecef;
 }
 
-/* ===============================================
-   クイズ表示エリア
-   =============================================== */
-#question {
-    font-size: 1.5em;
+.players-list li:last-child {
+    border-bottom: none;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-status {
+    padding: 0px 8px;
+    border-radius: 5px;
+    font-size: 0.8em;
     font-weight: bold;
-    margin: 20px 0;
-    min-height: 1.5em;
+    color: white;
+}
+
+/* ホストの場合に「準備OK/未準備」表示を非表示にする */
+.player-status.hidden {
+    display: none;
+}
+
+.player-status.host { /* このスタイルは.player-status.hiddenで上書きされますが、定義は残します */
+    background-color: #ffc107;
+    color: #333;
+}
+
+.player-status.ready {
+    background-color: #28a745;
+}
+
+/* ホストの名前のスタイル */
+.player-name.host-name {
+    color: #45a049; /* ホストの色を緑に設定（お好みの色に変更してください） */
+    font-weight: bold; /* 太字にする */
+}
+
+
+.player-score {
+    font-weight: bold;
+    color: #007bff;
+}
+
+#host-controls {
+    margin-top: 0px;
+    padding-top: 0px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.quiz-type-selection {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.quiz-select-button {
+    background-color: #17a2b8;
+}
+.quiz-select-button:hover {
+    background-color: #138496;
+}
+.quiz-select-button.selected {
+    background-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+
+#selected-quiz-display {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 0px;
+}
+
+.lobby-actions {
+    margin-top: 0px;
+    padding-top: 0px;
+    border-top: 1px solid #e0e0e0;
+}
+
+#set-ready-btn.ready {
+    background-color: #28a745;
+}
+
+/* クイズ画面 */
+.quiz-container {
+    padding: 0px;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+#question {
+    font-size: 1.9em;
+    font-weight: bold;
+    margin-top: -30px;
+    margin-bottom: -30px; 
+    min-height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -139,181 +397,410 @@ h2.section-title {
 
 #answer {
     font-size: 1.6em;
-    width: 100%;
-    max-width: 400px;
-    padding: 10px;
-    border: 2px solid #007bff;
-    border-radius: 8px;
+    width: 95%; 
+     color: black;
+    padding: 0px;
+    margin-top: -15px;
+    margin-bottom: 0px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background: #f9f9f9;
+    display: block;
+    color: black;
     text-align: left;
-    background-color: #fff;
-    box-sizing: border-box;
+    overflow-x: auto;
+    white-space: nowrap;
+    text-overflow: clip;
+    padding-right: 0px; /* 右側の余白を維持 */
 }
-
-#timer {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #555;
-}
-
-/* ===============================================
-   フリックキーボード (最重要: ズレ防止)
-   =============================================== */
-#flick-grid {
-    display: grid;
-    /* 3列固定。1つのボタンを70px。隙間を10pxに固定 */
-    grid-template-columns: repeat(3, 70px);
-    /* 4行固定 */
-    grid-template-rows: repeat(4, 70px);
-    gap: 12px;
-    justify-content: center;
-    align-content: center;
-    margin: 20px auto;
-    padding: 10px;
-    width: fit-content;
-}
-
-.flick-btn {
-    position: relative;
-    width: 70px;
-    height: 70px;
-    background: #ffffff;
-    border-radius: 10px;
-    border: none;
-    box-shadow: 0 3px 0 #ccd0d8, 0 4px 6px rgba(0,0,0,0.1);
-    touch-action: none;
-    user-select: none;
-    cursor: pointer;
-    overflow: visible; /* ヒントがはみ出してもOKにする */
-}
-
-.flick-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 #ccd0d8;
-    background-color: #f0f0f0;
-}
-
-/* 中心文字 */
-.flick-btn .center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #333;
-    pointer-events: none;
-}
-
-/* フリックガイド（小文字） */
-.flick-btn .hint {
-    position: absolute;
-    font-size: 0.7em;
-    color: #aaa;
-    pointer-events: none;
-}
-
-.flick-btn .top    { top: 5px;  left: 50%; transform: translateX(-50%); }
-.flick-btn .right  { right: 5px; top: 50%; transform: translateY(-50%); }
-.flick-btn .bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
-.flick-btn .left   { left: 5px;  top: 50%; transform: translateY(-50%); }
-
-/* 制御ボタン（4段目の左右） */
-#modify-btn, #clear-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 1em;
-    font-weight: bold;
-    border-radius: 10px;
-    border: none;
-    background: #e0e6ed;
-    color: #333;
-    box-shadow: 0 3px 0 #adb5bd, 0 4px 6px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    margin: 0; /* JSでGrid内に移動されるため余計なマージンは不要 */
-}
-
-#modify-btn:active, #clear-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 #adb5bd;
-}
-
-/* ===============================================
-   解答ボタン & フィードバック
-   =============================================== */
-#quiz-controls-area {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    margin-top: 10px;
-}
-
-#submit-btn {
-    width: 80%;
-    max-width: 300px;
-    height: 60px;
-    font-size: 1.4em;
-}
-
 #feedback {
     font-size: 1.2em;
-    font-weight: bold;
+    color: #dc3545;
+    margin-top: 15px;
     min-height: 1.5em;
 }
-
-/* ===============================================
-   入力方法選択 (ロビー)
-   =============================================== */
-.player-settings {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
+#feedback:empty {
+    min-height: 0;
+    margin-top: 0;
+}
+#feedback:contains("正解") {
+    color: #28a745;
 }
 
-.player-settings input[type="radio"] { display: none; }
-.player-settings label {
-    padding: 10px 20px;
-    background: #fff;
-    border: 2px solid #ff8c00;
-    color: #ff8c00;
-    border-radius: 8px;
+#question-number {
     font-weight: bold;
-    cursor: pointer;
+    margin-bottom: 0em;
+    font-size: 1.2em;
+    color: #333;
+    text-align: right;
 }
 
-.player-settings input[type="radio"]:checked + label {
-    background: #ff8c00;
-    color: #fff;
-}
-
-/* ===============================================
-   リザルト画面
-   =============================================== */
-.final-scores-list {
-    list-style: none;
-    padding: 0;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.final-scores-list li {
-    padding: 15px;
+#top-info { /* HTMLにない要素の可能性あり。もしあれば対応 */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #eee;
+    max-width: 400px;
+    margin: 0 auto 0px auto;
 }
 
-.fastest-player {
-    background-color: #fff9c4;
+#timer {
+    font-weight: bold;
+    margin-bottom: 0em;
+    font-size: 1.1rem;
+    color: #333;
+}
+/* グリッド全体の設定を4行に確定させる */
+#flick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 70px); /* 3列 */
+    grid-template-rows: repeat(4, 70px);    /* 4行 */
+    gap: 10px; /* 隙間を一定にする */
+    justify-content: center;
+    margin: 20px auto; /* 余計なネガティブマージンを消す */
 }
 
-.fastest-badge {
-    margin-right: 5px;
+/* 4段目のボタン（制御ボタン含む）も他のボタンと同じサイズにする */
+#modify-btn, #clear-btn {
+    width: 70px;
+    height: 70px;
+    margin: 0;        /* ズレの元になるmarginをリセット */
+    transform: none;  /* transformでの調整を無効化 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    background: #eef;
+    border-radius: 8px;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+/* control-row 自体のレイアウト機能を無効化し、中身だけをグリッドに従わせる */
+#control-row {
+    display: contents; /* 親要素としてのレイアウトを持たせず、子要素を直接グリッドに配置 */
+}
+
+
+    .flick-btn .center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .flick-btn .hint {
+      position: absolute;
+      font-size: 0.6em;
+      opacity: 0.6;
+      pointer-events: none;
+      color: #000;
+    }
+
+    /* hint位置（ボタン内ギリギリ） */
+    .flick-btn .top    { top: -3px; left: 50%; transform: translateX(-50%); }
+    .flick-btn .right  { right: -3px; top: 50%; transform: translateY(-50%); }
+    .flick-btn .bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+    .flick-btn .left   { left: -3px; top: 50%; transform: translateY(-50%); }
+
+    .top { top: 5px; left: 50%; transform: translateX(-50%); }
+    .right { top: 50%; right: 5px; transform: translateY(-50%); }
+    .bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
+    .left { top: 50%; left: 5px; transform: translateY(-50%); }
+#control-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0px;
+  margin-top: -90px;
+  margin-bottom: -20px;
+  transform: translateY(0px); 
+   transform: translateX(-15px);  
+  /* position: relative; と top: -92px; transform: translateX(0px); margin-bottom: -40px; は削除または変更 */
+  margin: 0 auto;
+  width: fit-content;
+}
+
+#clear-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 2.5em;
+    font-weight: bold;
+    border-radius: 10px;
+    transform: translateX(14px);  
+    border: none;
+    background: #eef;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    touch-action: none;
+    transition: background-color 0.1s ease;
+    
+    /* Centering the text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 30px; /* Vertically center text by matching height */
+    white-space: nowrap; /* Prevent the text from wrapping */
+}
+
+
+#modify-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 1.7em;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background: #eef;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    touch-action: none;
+    transition: background-color 0.1s ease;
+     transform: translateX(8px);  
+    /* Centering the text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 30px; /* Vertically center text by matching height */
+    white-space: nowrap; /* Prevent the text from wrapping */
+}
+
+
+#modify-btn:active, #clear-btn:active {
+    background-color: #e0e0e0;
+}
+#modify-btn:active, #clear-btn:active {
+    background-color: #e0e0e0; /* Color when pressed */
+}
+
+    #modify-btn:active, #clear-btn:active {
+        background-color: #e0e0e0; /* 押された時の色 */
+    }
+#modify-btn, #clear-btn {
+    color: black; /* 文字色を黒に設定 */
+    /* 他のスタイルも必要に応じて設定 */
+}
+
+/* もし、文字を囲む span があるなら */
+#modify-btn span, #clear-btn span {
+    color: black;
+}
+   
+
+#submit-btn {
+    width: 60vw;
+    max-width: 300px;
+    height: 17vw;
+    max-height: 80px;
+    font-size: 1.6em;
+    font-weight: bold;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+   
+    transition: background-color 0.1s ease;
+}
+
+
+/* 新しいコンテナのスタイルを追加 */
+#quiz-controls-area {
+  display: flex;
+  flex-direction: column; /* 子要素を縦に並べる */
+  align-items: center;    /* 子要素を水平方向に中央揃え */
+  gap: -110px;              /* 要素間の間隔 */
+  margin-top: -117px;       /* 上部に余白を追加 */
+}
+
+#submit-btn:active {
+    background-color: #aaccdd; /* Color when pressed */
+}
+    #question {
+      font-size: 1.5em; /* ← 拡大！ */
+      font-weight: bold;
+      margin-bottom: 0em;
+    }
+
+/* 結果画面 */
+.result-container h2 {
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+#final-result-message {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#your-score {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 25px;
+}
+
+.final-scores-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.final-scores-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-bottom: 1px dashed #e9ecef;
+}
+.final-scores-list li:last-child {
+    border-bottom: none;
+}
+
+.player-final-score {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.player-final-time {
+    color: #555;
+    font-size: 0.9em;
+}
+
+/* 入力方法選択のスタイル */
+/* ★player-settingsと重複している可能性のあるスタイルは削除または統合してください★ */
+#input-method-selection { /* HTMLにこのIDの要素が見当たらないため注意 */
+    margin-top: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+#input-method-selection label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+    padding: 0px 0px;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    background-color: #f0f8ff;
+    color: #333;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    min-width: 140px;
+    text-align: center;
+}
+#input-method-selection input[type="radio"] {
+    display: none;
+}
+#input-method-selection input[type="radio"]:checked + span {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+#input-method-selection label:active {
+    background-color: #0056b3 !important;
+    color: white !important;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+}
+
+/* --- Player Settings (フリック/キーボード選択) --- */
+.player-settings h3 {
+    color: #333;
+    margin-bottom: 0px; /* 必要に応じて調整 */
+    font-size: 1.2em;
+    width: 100%; /* 親要素の幅全体を使うように */
+    text-align: center; /* テキスト中央揃え */
+}
+
+.player-settings {
+    display: flex; /* Flexboxを有効にして子要素を横並びにする */
+    justify-content: center; /* 子要素を水平方向の中央に配置 */
+    align-items: center; /* 子要素を垂直方向の中央に揃える */
+    gap: 20px; /* 各ボタン間の間隔を設定 */
+    flex-wrap: wrap; /* 画面幅が狭い場合にボタンを折り返す */
+    margin-bottom: 0px; /* 下部に余白を追加 */
+}
+
+.player-settings input[type="radio"] {
+    display: none;
+}
+
+.player-settings label {
+    display: inline-flex; /* ★ここをinline-flexに変更。これで横並びになります★ */
+    align-items: center; /* テキストを垂直中央揃え */
+    justify-content: center; /* テキストを水平中央揃え */
+    
+    min-width: 120px; /* ボタンの最小幅を設定し、大きさを揃える */
+    box-sizing: border-box; /* paddingとborderを幅に含める */
+
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 10px 10px;
+    border: 2px solid #ff8c00; /* オレンジ色のボーダー */
+    background-color: #ff8c00; /* デフォルトの背景色をオレンジに */
+    color: white; /* 文字色を白色に */
+    font-weight: bold; /* 文字を太く */
+    border-radius: 5px; /* 角を丸くする */
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.player-settings label:hover {
+    background-color: #ffa500;
+    border-color: #e07b00;
+    transform: translateY(0px);
+}
+
+.player-settings input[type="radio"]:checked + label {
+    background-color: #ffc280; /* 選択時の背景色 */
+    border-color: #ff8c00; /* 選択時のボーダー色 */
+    color: white; /* 選択時の文字色 */
+    transform: scale(1.05); /* 選択時に少し拡大 */
+    box-shadow: 0 0 8px rgba(255, 140, 0, 0.6); /* 選択時に影 */
+}
+
+.player-settings input[type="radio"]:checked + label:hover {
+    background-color: #ffc280;
+    border-color: #ff8c00;
+    transform: scale(1.05);
+    cursor: default;
+}
+/* --- End Player Settings --- */
+
+
+/* スタート画面のボタンを大きくする */
+/* #start-box はHTMLに見当たらないため注意 */
+#start-box button {
+    display: block;
+    width: 80%;
+    max-width: 300px;
+    padding: 10px 10px;
+    margin: 10px auto;
+    font-size: 1.5em;
+    border: none;
+    border-radius: 10px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    transition: background-color 0.1s ease;
+}
+#start-box button:active {
+    background-color: #45a049;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+/* スタートボタンを赤色に */
+#start-btn { /* HTMLではstartGameBtn */
+    background-color: #dc3545 !important;
+}
+#start-btn:active {
+    background-color: #c82333 !important;
+}
+#start-btn:disabled {
+    background-color: #cccccc !important;
+    cursor: not-allowed;
 }
