@@ -603,15 +603,19 @@ function disableFlickInput() {
  * 選択された入力方法に応じてUIを切り替える
  * @param {string} method - 'flick' または 'keyboard'
  */
-// --- 変更後 ---
 function toggleInputMethodUI(method) {
     if (method === 'flick') {
-        flickGrid.style.display = 'grid'; // これだけで「わ」や「消去」も出る
-        answerEl.readOnly = true; 
-    } else {
-        flickGrid.style.display = 'none';
-        answerEl.readOnly = false;
-        answerEl.focus();
+        enableFlickInput();
+        disablePhysicalInput(); // 物理キーボード関連は非表示に
+    } else if (method === 'keyboard') {
+        enablePhysicalInput(); // 物理キーボード関連を表示に
+        disableFlickInput(); // フリックキーボード関連は非表示に
+    } else { // 選択されていない、またはデフォルト（ロビー初期表示など）
+        // 両方とも非表示にして、ユーザーに選択を促す状態にする
+        disablePhysicalInput();
+        disableFlickInput();
+        // submitBtn も非表示にする
+        submitBtn.style.display = 'none';
     }
 }
 
@@ -1211,37 +1215,20 @@ document.addEventListener('DOMContentLoaded', () => {
     resultBox.style.display = 'none';
 
     // フリックキーボードのボタンを動的に生成
-    // --- 変更後 ---
-document.addEventListener('DOMContentLoaded', () => {
-    // 既存の画面切り替え処理
-    roomSelectionScreen.style.display = 'block';
-    mainTitle.style.display = 'block';
+    
+Object.keys(flickData).forEach(base => {
+  // すべてのフリックボタンを createAndAttachFlickBtn で生成し、
+  // 「ワ」ボタンのみ controlRow に挿入、他は flickGrid に挿入
+  const btn = createAndAttachFlickBtn(base);
+  if (base === "わ") {
+    controlRow.insertBefore(btn, document.getElementById("clear-btn"));
+  } else {
+    flickGrid.appendChild(btn);
+  }
+});
 
-    const grid = document.getElementById("flick-grid");
-    const modifyBtn = document.getElementById("modify-btn");
-    const clearBtn = document.getElementById("clear-btn");
-
-    // 1. グリッド内をリセット（重複防止）
-    grid.innerHTML = '';
-
-    // 2. 1段目〜3段目（あ・か・さ・た・な・は・ま・や・ら）を順番に追加
-    const mainBases = ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら"];
-    mainBases.forEach(base => {
-        grid.appendChild(createAndAttachFlickBtn(base));
-    });
-
-    // 3. 4段目（一番下の列）を左から順に追加
-    // これにより、CSSのGridレイアウトが自動的に左下・下中・右下に配置します
-    grid.appendChild(modifyBtn);                 // 10番目：左下 (濁点/小文字)
-    grid.appendChild(createAndAttachFlickBtn("わ")); // 11番目：下中央 (わ/を/ん)
-    grid.appendChild(clearBtn);                  // 12番目：右下 (消去)
-
-    // 以前の controlRow 自体は Grid の邪魔をしないように無効化
-    const controlRow = document.getElementById("control-row");
-    if (controlRow) controlRow.style.display = 'contents';
-
-    // 初期状態の無効化処理
+    // 初期状態では両方の入力方法を無効化（ユーザー選択を待つ）
     disablePhysicalInput();
     disableFlickInput();
-    submitBtn.style.display = 'none';
+    submitBtn.style.display = 'none'; // 初期状態では解答ボタンも非表示
 });
