@@ -449,166 +449,100 @@ h2.section-title {
     font-size: 1.1rem;
     color: #333;
 }
-/* グリッド全体の設定を4行に確定させる */
+
+
+/* --- フリックキーボード全体のコンテナ --- */
 #flick-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 70px); /* 3列 */
-    grid-template-rows: repeat(4, 70px);    /* 4行 */
-    gap: 10px; /* 隙間を一定にする */
+    display: none; /* JSで "grid" に切り替え */
+    grid-template-columns: repeat(3, 1fr); /* 均等な3列 */
+    grid-template-rows: repeat(4, 1fr);    /* 均等な4行 */
+    gap: 10px;          /* ボタン同士の隙間 */
     justify-content: center;
-    margin: 20px auto; /* 余計なネガティブマージンを消す */
+    align-content: center;
+    margin: 20px auto;  /* 上下に余白を持たせ中央寄せ */
+    width: 95%;         /* 画面幅に合わせる */
+    max-width: 320px;   /* 大きすぎないように制限 */
+    /* 配置を名前で固定 */
+    grid-template-areas:
+        "あ か さ"
+        "た な は"
+        "ま や ら"
+        "modify わ clear";
 }
 
-/* 4段目のボタン（制御ボタン含む）も他のボタンと同じサイズにする */
-#modify-btn, #clear-btn {
-    width: 70px;
-    height: 70px;
-    margin: 0;        /* ズレの元になるmarginをリセット */
-    transform: none;  /* transformでの調整を無効化 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2em;
+/* --- ボタン共通スタイル --- */
+.flick-btn, #modify-btn, #clear-btn {
+    position: relative;
+    width: 100%;        /* グリッドのセル幅いっぱいに */
+    aspect-ratio: 1 / 1; /* 正方形を維持 */
     background: #eef;
     border-radius: 8px;
+    border: none;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-}
-
-/* control-row 自体のレイアウト機能を無効化し、中身だけをグリッドに従わせる */
-#control-row {
-    display: contents; /* 親要素としてのレイアウトを持たせず、子要素を直接グリッドに配置 */
-}
-
-
-    .flick-btn .center {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #000;
-    }
-
-    .flick-btn .hint {
-      position: absolute;
-      font-size: 0.6em;
-      opacity: 0.6;
-      pointer-events: none;
-      color: #000;
-    }
-
-    /* hint位置（ボタン内ギリギリ） */
-    .flick-btn .top    { top: -3px; left: 50%; transform: translateX(-50%); }
-    .flick-btn .right  { right: -3px; top: 50%; transform: translateY(-50%); }
-    .flick-btn .bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
-    .flick-btn .left   { left: -3px; top: 50%; transform: translateY(-50%); }
-
-    .top { top: 5px; left: 50%; transform: translateX(-50%); }
-    .right { top: 50%; right: 5px; transform: translateY(-50%); }
-    .bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
-    .left { top: 50%; left: 5px; transform: translateY(-50%); }
-#control-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0px;
-  margin-top: -90px;
-  margin-bottom: -20px;
-  transform: translateY(0px); 
-   transform: translateX(-15px);  
-  /* position: relative; と top: -92px; transform: translateX(0px); margin-bottom: -40px; は削除または変更 */
-  margin: 0 auto;
-  width: fit-content;
-}
-
-#clear-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 2.5em;
-    font-weight: bold;
-    border-radius: 10px;
-    transform: translateX(14px);  
-    border: none;
-    background: #eef;
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     touch-action: none;
-    transition: background-color 0.1s ease;
-    
-    /* Centering the text */
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 30px; /* Vertically center text by matching height */
-    white-space: nowrap; /* Prevent the text from wrapping */
-}
-
-
-#modify-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 1.7em;
-    font-weight: bold;
-    border-radius: 10px;
-    border: none;
-    background: #eef;
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-    touch-action: none;
-    transition: background-color 0.1s ease;
-     transform: translateX(8px);  
-    /* Centering the text */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 30px; /* Vertically center text by matching height */
-    white-space: nowrap; /* Prevent the text from wrapping */
-}
-
-
-#modify-btn:active, #clear-btn:active {
-    background-color: #e0e0e0;
-}
-#modify-btn:active, #clear-btn:active {
-    background-color: #e0e0e0; /* Color when pressed */
-}
-
-    #modify-btn:active, #clear-btn:active {
-        background-color: #e0e0e0; /* 押された時の色 */
-    }
-#modify-btn, #clear-btn {
-    color: black; /* 文字色を黒に設定 */
-    /* 他のスタイルも必要に応じて設定 */
-}
-
-/* もし、文字を囲む span があるなら */
-#modify-btn span, #clear-btn span {
+    cursor: pointer;
     color: black;
+    transition: background-color 0.1s ease;
 }
-   
+
+/* 各エリアへの割り当て (JSで指定された gridArea に対応) */
+#modify-btn { grid-area: modify; font-size: 1.2em; font-weight: bold; }
+#clear-btn  { grid-area: clear;  font-size: 2em; font-weight: bold; }
+/* .flick-btn 自体は JS側で btn.style.gridArea = base されるため自動配置されます */
+
+/* --- ボタン内テキストの装飾 --- */
+.flick-btn .center {
+    font-size: 1.4em;
+    font-weight: bold;
+}
+
+.flick-btn .hint {
+    position: absolute;
+    font-size: 0.7em;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* フリックのヒント位置（絶対配置） */
+.flick-btn .top    { top: 4px;    left: 50%; transform: translateX(-50%); }
+.flick-btn .right  { right: 4px;  top: 50%; transform: translateY(-50%); }
+.flick-btn .bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.flick-btn .left   { left: 4px;   top: 50%; transform: translateY(-50%); }
+
+/* --- アクションエリア (解答ボタン) --- */
+#quiz-controls-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
 
 #submit-btn {
-    width: 60vw;
+    width: 80%;
     max-width: 300px;
-    height: 17vw;
-    max-height: 80px;
-    font-size: 1.6em;
+    height: 60px;
+    font-size: 1.4em;
     font-weight: bold;
     border-radius: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-   
+    background-color: #007bff;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     transition: background-color 0.1s ease;
 }
 
-
-/* 新しいコンテナのスタイルを追加 */
-#quiz-controls-area {
-  display: flex;
-  flex-direction: column; /* 子要素を縦に並べる */
-  align-items: center;    /* 子要素を水平方向に中央揃え */
-  gap: -110px;              /* 要素間の間隔 */
-  margin-top: -117px;       /* 上部に余白を追加 */
+#submit-btn:active {
+    background-color: #0056b3;
+    transform: translateY(2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* --- 不要になった古い設定の無効化 --- */
+#control-row { display: none !important; } /* client.jsの修正により不要 */
 #submit-btn:active {
     background-color: #aaccdd; /* Color when pressed */
 }
