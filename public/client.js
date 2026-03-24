@@ -1011,30 +1011,19 @@ socket.on('gameStarted', (gameData) => {
     current = 0;
     correctCount = 0;
 
-    // === ★【修正】カウントダウン開始時の画面リセット ===
-    clearInterval(intervalId); // ミリ秒タイマーのゴミを掃除
-    
-    // 3, 2, 1以外の要素をすべて非表示にする
-    questionNumberEl.style.visibility = "hidden"; // 問題数(1/1)
-    timerEl.style.visibility = "hidden";          // タイマー表示
-    answerEl.style.display = "none";              // 入力フォーム
-    submitBtn.style.display = "none";             // 解答ボタン
-    feedbackEl.textContent = "";                  // フィードバックの文字消去
+    // === カウントダウンの初期化 ===
+    clearInterval(intervalId); // 既存のミリ秒タイマーをクリア
+    answerEl.disabled = true;  // カウントダウン中は入力させない
+    submitBtn.disabled = true;
 
-    // 入力モードのガワだけ準備（表示自体は display: none で隠れている）
     if (mySelectedInputMethod === "flick") {
         enableFlickInput();
-        disablePhysicalInput();
-        answerEl.style.display = "none"; // enableFlickInputで表示されてしまうのを再度隠す
     } else {
         enablePhysicalInput();
-        disableFlickInput();
-        answerEl.style.display = "none"; // enablePhysicalInputで表示されてしまうのを再度隠す
     }
 
     let countdownTime = 3;
-    questionEl.style.fontSize = "4.5em";   // カウントダウンの文字を大きく
-    questionEl.style.textAlign = "center"; // 中央寄せ
+    questionEl.style.fontSize = "3.5em"; // カウントダウン時は文字を大きく
     questionEl.textContent = countdownTime; // 「3」からスタート
 
     const countdownInterval = setInterval(() => {
@@ -1044,34 +1033,37 @@ socket.on('gameStarted', (gameData) => {
         } else if (countdownTime === 0) {
             questionEl.textContent = "スタート！";
         } else {
-            // === カウントダウン終了後の処理 ===
+            // カウントダウン終了後の処理
             clearInterval(countdownInterval);
             
-            // ★ 時間の基準点を「今」に同期する
+            // ★【修正箇所】カウントダウン終了の瞬間（今）を 0.00 秒の基準にする
             startTime = performance.now(); 
-            intervalId = setInterval(updateTimer, 10); // ミリ秒タイマースタート
             
-            // ★【修正】隠していた要素をすべて再表示する
-            questionNumberEl.style.visibility = "visible";
-            timerEl.style.visibility = "visible";
+            intervalId = setInterval(updateTimer, 10); // 本番の10ミリ秒タイマースタート
+            
+            // 操作を有効化し、問題を表示する
             answerEl.disabled = false;
             submitBtn.disabled = false;
-
-            // 問題（しりとりワード）の描画
             showQuestion(); 
-
-            // 入力方式に合わせて、問題の文字サイズや入力フォームの表示を元に戻す
-            questionEl.style.textAlign = "left"; 
+            
             if (mySelectedInputMethod === "flick") {
                 questionEl.style.fontSize = "1.5em";
-                enableFlickInput(); // フリックキーボードと入力フォームを可視化
             } else {
                 questionEl.style.fontSize = "2.5em";
-                enablePhysicalInput(); // キーボード用のフォームを可視化
             }
         }
-    }, 1000); // 1秒おきに実行
+    }, 1000); // 1秒(1000ms)おきに実行
 });
+
+/**
+ * タイマーを更新する
+ */
+function updateTimer() {
+    const now = performance.now();
+    const diff = ((now - startTime) / 1000).toFixed(2);
+    timerEl.textContent = `${diff}秒`;
+}
+
 /**
  * 問題を表示する
  */
