@@ -1011,8 +1011,8 @@ socket.on('gameStarted', (gameData) => {
     current = 0;
     correctCount = 0;
 
-    // === ★ 3秒カウントダウンの追加 ===
-    clearInterval(intervalId); // タイマーのゴミ残りを掃除
+    // === カウントダウンの初期化 ===
+    clearInterval(intervalId); // 既存のミリ秒タイマーをクリア
     answerEl.disabled = true;  // カウントダウン中は入力させない
     submitBtn.disabled = true;
 
@@ -1036,16 +1036,12 @@ socket.on('gameStarted', (gameData) => {
             // カウントダウン終了後の処理
             clearInterval(countdownInterval);
             
-            // 本来のタイマー（ミリ秒計測）をスタート
-            if (gameStartTimeOffset !== 0) {
-                startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now())) + gameStartTimeOffset;
-            } else {
-                startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now()));
-            }
+            // ★【修正箇所】カウントダウン終了の瞬間（今）を 0.00 秒の基準にする
+            startTime = performance.now(); 
             
-            intervalId = setInterval(updateTimer, 10); // 本番タイマースタート
+            intervalId = setInterval(updateTimer, 10); // 本番の10ミリ秒タイマースタート
             
-            // 問題を表示し、操作を有効化
+            // 操作を有効化し、問題を表示する
             answerEl.disabled = false;
             submitBtn.disabled = false;
             showQuestion(); 
@@ -1058,6 +1054,7 @@ socket.on('gameStarted', (gameData) => {
         }
     }, 1000); // 1秒(1000ms)おきに実行
 });
+
 /**
  * タイマーを更新する
  */
