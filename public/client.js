@@ -992,6 +992,15 @@ socket.on('roomStateUpdate', (room) => {
 // === ゲーム進行ロジック ===
 // ===============================================
 // ゲーム開始イベント (カウントダウン付きに修正)
+/**
+ * ★ タイマーを更新する関数（エラー回避のため、上に配置します）
+ */
+function updateTimer() {
+    const now = performance.now();
+    const diff = ((now - startTime) / 1000).toFixed(2);
+    timerEl.textContent = `${diff}秒`;
+}
+
 socket.on('gameStarted', (gameData) => {
     console.log('Game started! Initial data:', gameData);
     questions = gameData.questions;
@@ -1040,9 +1049,9 @@ socket.on('gameStarted', (gameData) => {
             // カウントダウン終了後の処理
             clearInterval(countdownInterval);
             
-            // ★ 時間の基準点を「今（表示された瞬間）」に同期する
+            // 時間の基準点を「今（表示された瞬間）」に同期する
             startTime = performance.now(); 
-            intervalId = setInterval(updateTimer, 10); // ミリ秒タイマースタート
+            intervalId = setInterval(updateTimer, 10); // ★ ここで上の updateTimer を安全に呼び出せます
             
             // 2. 隠していた要素をすべて再表示
             questionNumberEl.style.visibility = "visible";
@@ -1050,11 +1059,11 @@ socket.on('gameStarted', (gameData) => {
             answerEl.disabled = false;
             submitBtn.disabled = false;
 
-            showQuestion(); // クイズ表示（問題テキストを `questions[0].q` に書き換える）
+            showQuestion(); // クイズ表示
 
             questionEl.style.textAlign = "left"; // 問題文は左寄せに戻す
             
-            // ★ カウントダウンが終わってから、初めて入力方法を画面に反映・表示させる
+            // カウントダウンが終わってから、初めて入力方法を画面に反映・表示させる
             if (mySelectedInputMethod === "flick") {
                 questionEl.style.fontSize = "1.5em";
                 enableFlickInput(); 
@@ -1067,13 +1076,6 @@ socket.on('gameStarted', (gameData) => {
 });
 
 /**
- * タイマーを更新する
- */
-function updateTimer() {
-    const now = performance.now();
-    const diff = ((now - startTime) / 1000).toFixed(2);
-    timerEl.textContent = `${diff}秒`;
-}/**
  * 問題を表示する
  */
 function showQuestion() {
