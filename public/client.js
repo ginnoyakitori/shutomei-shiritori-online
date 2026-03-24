@@ -687,10 +687,15 @@ leaveRoomBtn.addEventListener('click', () => {
 // クイズタイプ選択ボタン
 selectKokumeiBtn.addEventListener('click', () => selectQuizType('kokumei'));
 selectShutomeiBtn.addEventListener('click', () => selectQuizType('shutomei'));
+// ★ ポケモンボタンのイベントリスナーを追加
+const selectPokemonBtn = document.getElementById('select-pokemon');
+if (selectPokemonBtn) {
+    selectPokemonBtn.addEventListener('click', () => selectQuizType('pokemon'));
+}
 
 /**
  * クイズタイプを選択し、サーバーに通知する
- * @param {string} type - 'kokumei' または 'shutomei'
+ * @param {string} type - 'kokumei' または 'shutomei' または 'pokemon'
  */
 function selectQuizType(type) {
     let fileName = '';
@@ -704,6 +709,10 @@ function selectQuizType(type) {
         fileName = 'shutomei.csv';
         displayName = '首都名しりとり';
         setName = 'shutomei';
+    } else if (type === 'pokemon') { // ★ ポケモンを追加
+        fileName = 'pokemon.csv';
+        displayName = 'ポケモンしりとり';
+        setName = 'pokemon';
     }
     selectedQuizSet = setName;
     selectedQuizTitle = displayName;
@@ -938,17 +947,22 @@ socket.on('roomStateUpdate', (room) => {
         selectedQuizSet = room.quizSet;
         selectedQuizTitle = room.quizTitle;
 
-        // クイズタイプ選択ボタンを有効にする
+// 577行目付近の if (isHost) の中を修正
         selectKokumeiBtn.disabled = false;
         selectShutomeiBtn.disabled = false;
+        const selectPokemonBtn = document.getElementById('select-pokemon');
+        if (selectPokemonBtn) selectPokemonBtn.disabled = false;
 
         selectKokumeiBtn.classList.remove('selected');
         selectShutomeiBtn.classList.remove('selected');
+        if (selectPokemonBtn) selectPokemonBtn.classList.remove('selected');
 
         if (room.quizFile === 'kokumei.csv') {
             selectKokumeiBtn.classList.add('selected');
         } else if (room.quizFile === 'shutomei.csv') {
             selectShutomeiBtn.classList.add('selected');
+        } else if (room.quizFile === 'pokemon.csv' && selectPokemonBtn) { // ★ 追加
+            selectPokemonBtn.classList.add('selected');
         }
         selectedQuizDisplay.textContent = room.quizFile ? ` ${room.quizTitle}` : 'クイズ未選択';
 
@@ -977,15 +991,13 @@ socket.on('roomStateUpdate', (room) => {
 });// ===============================================
 // === ゲーム進行ロジック ===
 // ===============================================
-
-// ゲーム開始イベント
+// ゲーム開始イベント (カウントダウン付きに修正)
 socket.on('gameStarted', (gameData) => {
     console.log('Game started! Initial data:', gameData);
     questions = gameData.questions;
     selectedQuizSet = gameData.quizSet;
     selectedQuizTitle = gameData.quizTitle;
 
-    // mySelectedInputMethod がまだ設定されていなければ、サーバーからの情報かデフォルトを適用
     if (!mySelectedInputMethod) {
         mySelectedInputMethod = gameData.inputMethod || "keyboard";
         const radio = document.querySelector(`input[name="myInputMethod"][value="${mySelectedInputMethod}"]`);
@@ -995,33 +1007,57 @@ socket.on('gameStarted', (gameData) => {
     roomSelectionScreen.style.display = "none";
     roomLobby.style.display = "none";
     quizBox.style.display = "block";
-    mainTitle.style.display = "none"; // ゲーム開始時もメインタイトルは非表示
-    current = 0; // 現在の問題番号をリセット (1問固定なので実質0)
-    correctCount = 0; // そのラウンドの正解数をリセット
+    mainTitle.style.display = "none";
+    current = 0;
+    correctCount = 0;
 
-    // startTime は joinedRoom で設定された gameStartTimeOffset を使用して計算
-    if (gameStartTimeOffset !== 0) {
-        startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now())) + gameStartTimeOffset;
-    } else {
-        startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now()));
-    }
-    console.log(`My game startTime: ${new Date(Date.now() - (performance.now() - startTime)).toLocaleTimeString()}`);
-    clearInterval(intervalId); // 既存のタイマーがあればクリア
-    intervalId = setInterval(updateTimer, 10); // タイマー開始
-    showQuestion(); // 質問表示と入力モードの設定はここで処理される
+    // === ★ 3秒カウントダウンの追加 ===
+    clearInterval(intervalId); // タイマーのゴミ残りを掃除
+    answerEl.disabled = true;  // カウントダウン中は入力させない
+    submitBtn.disabled = true;
 
-    // 入力モードに応じてUIを切り替える
     if (mySelectedInputMethod === "flick") {
         enableFlickInput();
-        questionEl.style.fontSize = "1.5em"; // フリック入力時のフォントサイズ
-    } else { // 'keyboard'
+    } else {
         enablePhysicalInput();
-        questionEl.style.fontSize = "2.5em"; // 物理キーボード時のフォントサイズ
     }
-    answerEl.disabled = false; // 回答欄を有効化
-    // submitBtn.disabled の制御は、個々の入力方法の enable/disable 関数に任せる
-});
 
+    let countdownTime = 3;
+    questionEl.style.fontSize = "3.5em"; // カウントダウン時は文字を大きく
+    questionEl.textContent = countdownTime; // 「3」からスタート
+
+    const countdownInterval = setInterval(() => {
+        countdownTime--;
+        if (countdownTime > 0) {
+            questionEl.textContent = countdownTime;
+        } else if (countdownTime === 0) {
+            questionEl.textContent = "スタート！";
+        } else {
+            // カウントダウン終了後の処理
+            clearInterval(countdownInterval);
+            
+            // 本来のタイマー（ミリ秒計測）をスタート
+            if (gameStartTimeOffset !== 0) {
+                startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now())) + gameStartTimeOffset;
+            } else {
+                startTime = performance.now() - (Date.now() - (gameData.gameStartTime || Date.now()));
+            }
+            
+            intervalId = setInterval(updateTimer, 10); // 本番タイマースタート
+            
+            // 問題を表示し、操作を有効化
+            answerEl.disabled = false;
+            submitBtn.disabled = false;
+            showQuestion(); 
+            
+            if (mySelectedInputMethod === "flick") {
+                questionEl.style.fontSize = "1.5em";
+            } else {
+                questionEl.style.fontSize = "2.5em";
+            }
+        }
+    }, 1000); // 1秒(1000ms)おきに実行
+});
 /**
  * タイマーを更新する
  */
