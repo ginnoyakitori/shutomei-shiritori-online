@@ -994,7 +994,7 @@ socket.on('roomStateUpdate', (room) => {
 // ゲーム開始イベント (カウントダウン付きに修正)
 /**
  * ★ タイマーを更新する関数（エラー回避のため、上に配置します）
- */
+ */// ★ タイマー関数（必ず先に定義する）
 function updateTimer() {
     const now = performance.now();
     const diff = ((now - startTime) / 1000).toFixed(2);
@@ -1003,6 +1003,14 @@ function updateTimer() {
 
 socket.on('gameStarted', (gameData) => {
     console.log('Game started! Initial data:', gameData);
+
+    // ★ 安全チェック追加（ここ重要）
+    if (!gameData || !gameData.questions || gameData.questions.length === 0) {
+        console.error("問題データが不正:", gameData);
+        alert("問題データの読み込みに失敗しました");
+        return;
+    }
+
     questions = gameData.questions;
     selectedQuizSet = gameData.quizSet;
     selectedQuizTitle = gameData.quizTitle;
@@ -1020,61 +1028,70 @@ socket.on('gameStarted', (gameData) => {
     current = 0;
     correctCount = 0;
 
-    // === カウントダウンの初期化 ===
-    clearInterval(intervalId); // ミリ秒タイマーのゴミを掃除
-    
-    // 1. カウントダウン中は他の要素を完全に非表示にする
-    questionNumberEl.style.visibility = "hidden"; // 問題番号 (1/1)
-    timerEl.style.visibility = "hidden";          // タイマー
-    answerEl.style.display = "none";              // 解答入力欄
-    submitBtn.style.display = "none";             // 解答ボタン
-    feedbackEl.textContent = "";                  // 正解/不正解の文字
+    // === カウントダウン初期化 ===
+    clearInterval(intervalId);
 
-    // キーボード入力系を一旦すべて無効・非表示にする
+    // UI非表示
+    questionNumberEl.style.visibility = "hidden";
+    timerEl.style.visibility = "hidden";
+    answerEl.style.display = "none";
+    submitBtn.style.display = "none";
+    feedbackEl.textContent = "";
+
     disablePhysicalInput();
     disableFlickInput();
 
     let countdownTime = 3;
-    questionEl.style.fontSize = "4.5em";   // カウントダウン文字を大きく
-    questionEl.style.textAlign = "center"; // 文字を画面中央に
-    questionEl.textContent = countdownTime; // 「3」からスタート
+    questionEl.style.fontSize = "4.5em";
+    questionEl.style.textAlign = "center";
+    questionEl.textContent = countdownTime;
 
     const countdownInterval = setInterval(() => {
         countdownTime--;
+
         if (countdownTime > 0) {
             questionEl.textContent = countdownTime;
+
         } else if (countdownTime === 0) {
             questionEl.textContent = "スタート！";
+
         } else {
-            // カウントダウン終了後の処理
+            // ===== カウントダウン終了 =====
             clearInterval(countdownInterval);
-            
-            // 時間の基準点を「今（表示された瞬間）」に同期する
-            startTime = performance.now(); 
-            intervalId = setInterval(updateTimer, 10); // ★ ここで上の updateTimer を安全に呼び出せます
-            
-            // 2. 隠していた要素をすべて再表示
-            questionNumberEl.style.visibility = "visible";
-            timerEl.style.visibility = "visible";
-            answerEl.disabled = false;
-            submitBtn.disabled = false;
 
-            showQuestion(); // クイズ表示
+            // ★ ここで確実にエラー防止
+            try {
+                startTime = performance.now();
+                intervalId = setInterval(updateTimer, 10);
 
-            questionEl.style.textAlign = "left"; // 問題文は左寄せに戻す
-            
-            // カウントダウンが終わってから、初めて入力方法を画面に反映・表示させる
-            if (mySelectedInputMethod === "flick") {
-                questionEl.style.fontSize = "1.5em";
-                enableFlickInput(); 
-            } else {
-                questionEl.style.fontSize = "2.5em";
-                enablePhysicalInput(); 
+                // UI復帰
+                questionNumberEl.style.visibility = "visible";
+                timerEl.style.visibility = "visible";
+                answerEl.style.display = "block";
+                answerEl.disabled = false;
+                submitBtn.disabled = false;
+
+                // ★ 問題表示（ここで落ちる可能性あるのでtry内）
+                showQuestion();
+
+                questionEl.style.textAlign = "left";
+
+                // 入力UI復帰
+                if (mySelectedInputMethod === "flick") {
+                    questionEl.style.fontSize = "1.5em";
+                    enableFlickInput();
+                } else {
+                    questionEl.style.fontSize = "2.5em";
+                    enablePhysicalInput();
+                }
+
+            } catch (e) {
+                console.error("ゲーム開始処理エラー:", e);
+                alert("ゲーム開始中にエラーが発生しました");
             }
         }
-    }, 1000); // 1秒(1000ms)おきに実行
+    }, 1000);
 });
-
 /**
  * 問題を表示する
  */
