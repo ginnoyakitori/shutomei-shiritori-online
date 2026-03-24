@@ -1012,18 +1012,22 @@ socket.on('gameStarted', (gameData) => {
     correctCount = 0;
 
     // === カウントダウンの初期化 ===
-    clearInterval(intervalId); // 既存のミリ秒タイマーをクリア
-    answerEl.disabled = true;  // カウントダウン中は入力させない
-    submitBtn.disabled = true;
+    clearInterval(intervalId); // ミリ秒タイマーのゴミを掃除
+    
+    // 1. カウントダウン中は他の要素を完全に非表示にする
+    questionNumberEl.style.visibility = "hidden"; // 問題番号 (1/1)
+    timerEl.style.visibility = "hidden";          // タイマー
+    answerEl.style.display = "none";              // 解答入力欄
+    submitBtn.style.display = "none";             // 解答ボタン
+    feedbackEl.textContent = "";                  // 正解/不正解の文字
 
-    if (mySelectedInputMethod === "flick") {
-        enableFlickInput();
-    } else {
-        enablePhysicalInput();
-    }
+    // キーボード入力系を一旦すべて無効・非表示にする
+    disablePhysicalInput();
+    disableFlickInput();
 
     let countdownTime = 3;
-    questionEl.style.fontSize = "3.5em"; // カウントダウン時は文字を大きく
+    questionEl.style.fontSize = "4.5em";   // カウントダウン文字を大きく
+    questionEl.style.textAlign = "center"; // 文字を画面中央に
     questionEl.textContent = countdownTime; // 「3」からスタート
 
     const countdownInterval = setInterval(() => {
@@ -1036,20 +1040,27 @@ socket.on('gameStarted', (gameData) => {
             // カウントダウン終了後の処理
             clearInterval(countdownInterval);
             
-            // ★【修正箇所】カウントダウン終了の瞬間（今）を 0.00 秒の基準にする
+            // ★ 時間の基準点を「今（表示された瞬間）」に同期する
             startTime = performance.now(); 
+            intervalId = setInterval(updateTimer, 10); // ミリ秒タイマースタート
             
-            intervalId = setInterval(updateTimer, 10); // 本番の10ミリ秒タイマースタート
-            
-            // 操作を有効化し、問題を表示する
+            // 2. 隠していた要素をすべて再表示
+            questionNumberEl.style.visibility = "visible";
+            timerEl.style.visibility = "visible";
             answerEl.disabled = false;
             submitBtn.disabled = false;
-            showQuestion(); 
+
+            showQuestion(); // クイズ表示（問題テキストを `questions[0].q` に書き換える）
+
+            questionEl.style.textAlign = "left"; // 問題文は左寄せに戻す
             
+            // ★ カウントダウンが終わってから、初めて入力方法を画面に反映・表示させる
             if (mySelectedInputMethod === "flick") {
                 questionEl.style.fontSize = "1.5em";
+                enableFlickInput(); 
             } else {
                 questionEl.style.fontSize = "2.5em";
+                enablePhysicalInput(); 
             }
         }
     }, 1000); // 1秒(1000ms)おきに実行
@@ -1062,9 +1073,7 @@ function updateTimer() {
     const now = performance.now();
     const diff = ((now - startTime) / 1000).toFixed(2);
     timerEl.textContent = `${diff}秒`;
-}
-
-/**
+}/**
  * 問題を表示する
  */
 function showQuestion() {
