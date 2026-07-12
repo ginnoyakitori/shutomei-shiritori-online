@@ -692,9 +692,9 @@ const selectPokemonBtn = document.getElementById('select-pokemon');
 if (selectPokemonBtn) {
     selectPokemonBtn.addEventListener('click', () => selectQuizType('pokemon'));
 }
-const selectPokemonBtn = document.getElementById('select-kokumei-sp');
-if (selectPokemonBtn) {
-    selectPokemonBtn.addEventListener('click', () => selectQuizType('kokumei-sp'));
+const selectKokumeiSpBtn = document.getElementById('select-kokumei-sp');
+if (selectKokumeiSpBtn) {
+    selectKokumeiSpBtn.addEventListener('click', () => selectQuizType('kokumei-sp'));
 }
 
 /**
@@ -971,6 +971,8 @@ socket.on('roomStateUpdate', (room) => {
             selectShutomeiBtn.classList.add('selected');
         } else if (room.quizFile === 'pokemon.csv' && selectPokemonBtn) { // ★ 追加
             selectPokemonBtn.classList.add('selected');
+        } else if (room.quizFile === 'kokumei-sp.csv') {
+            selectKokumeiSpBtn.classList.add('selected');
         }
         selectedQuizDisplay.textContent = room.quizFile ? ` ${room.quizTitle}` : 'クイズ未選択';
 
