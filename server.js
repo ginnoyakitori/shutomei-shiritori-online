@@ -36,11 +36,12 @@ function loadQuizData(filename) {
 quizData.kokumei = loadQuizData('kokumei.csv');
 quizData.shutomei = loadQuizData('shutomei.csv');
 quizData.pokemon = loadQuizData('pokemon.csv');
+quizData.kokumei-sp = loadQuizData('kokumei-sp.csv');
 
 console.log(`Loaded kokumei questions: ${quizData.kokumei.length}`);
 console.log(`Loaded shutomei questions: ${quizData.shutomei.length}`);
 console.log(`Loaded pokemon questions: ${quizData.pokemon.length}`);
-
+console.log(`Loaded kokumei-sp questions: ${quizData.kokumei-sp.length}`);
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
     emitRoomList();
