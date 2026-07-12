@@ -692,6 +692,10 @@ const selectPokemonBtn = document.getElementById('select-pokemon');
 if (selectPokemonBtn) {
     selectPokemonBtn.addEventListener('click', () => selectQuizType('pokemon'));
 }
+const selectPokemonBtn = document.getElementById('select-kokumei-sp');
+if (selectPokemonBtn) {
+    selectPokemonBtn.addEventListener('click', () => selectQuizType('kokumei-sp'));
+}
 
 /**
  * クイズタイプを選択し、サーバーに通知する
@@ -713,6 +717,10 @@ function selectQuizType(type) {
         fileName = 'pokemon.csv';
         displayName = 'ポケモンしりとり';
         setName = 'pokemon';
+    } else if (type === 'kokumei-sp') { // ★ ポケモンを追加
+        fileName = 'kokumei-sp.csv';
+        displayName = '国名しりとりスプシャ';
+        setName = 'kokumei-sp';
     }
     selectedQuizSet = setName;
     selectedQuizTitle = displayName;
