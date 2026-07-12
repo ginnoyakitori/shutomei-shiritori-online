@@ -692,9 +692,9 @@ const selectPokemonBtn = document.getElementById('select-pokemon');
 if (selectPokemonBtn) {
     selectPokemonBtn.addEventListener('click', () => selectQuizType('pokemon'));
 }
-const selectKokumeiSpBtn = document.getElementById('select-kokumei-sp');
+const selectKokumeiSpBtn = document.getElementById('select-kokumeisp');
 if (selectKokumeiSpBtn) {
-    selectKokumeiSpBtn.addEventListener('click', () => selectQuizType('kokumei-sp'));
+    selectKokumeiSpBtn.addEventListener('click', () => selectQuizType('kokumeisp'));
 }
 
 /**
@@ -717,10 +717,10 @@ function selectQuizType(type) {
         fileName = 'pokemon.csv';
         displayName = 'ポケモンしりとり';
         setName = 'pokemon';
-    } else if (type === 'kokumei-sp') { // ★ ポケモンを追加
-        fileName = 'kokumei-sp.csv';
+    } else if (type === 'kokumeisp') { // ★ ポケモンを追加
+        fileName = 'kokumeisp.csv';
         displayName = '国名しりとりスプシャ';
-        setName = 'kokumei-sp';
+        setName = 'kokumeisp';
     }
     selectedQuizSet = setName;
     selectedQuizTitle = displayName;
@@ -971,7 +971,7 @@ socket.on('roomStateUpdate', (room) => {
             selectShutomeiBtn.classList.add('selected');
         } else if (room.quizFile === 'pokemon.csv' && selectPokemonBtn) { // ★ 追加
             selectPokemonBtn.classList.add('selected');
-        } else if (room.quizFile === 'kokumei-sp.csv') {
+        } else if (room.quizFile === 'kokumeisp.csv') {
             selectKokumeiSpBtn.classList.add('selected');
         }
         selectedQuizDisplay.textContent = room.quizFile ? ` ${room.quizTitle}` : 'クイズ未選択';
