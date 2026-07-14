@@ -860,7 +860,68 @@ socket.on('roomList', (roomsData) => {
     console.log('--- roomList イベントを受信しました');
     console.log('受信した部屋リスト:', roomsData);
 
-    // ... (省略) ...
+    roomListUl.innerHTML = ''; // 既存のリストをクリア
+    
+    if (!roomsData || roomsData.length === 0) {
+        // 公開されている部屋がない場合
+        const noRoomsItem = document.createElement('li');
+        noRoomsItem.className = 'no-rooms';
+        noRoomsItem.textContent = '現在、公開されている部屋はありません。';
+        roomListUl.appendChild(noRoomsItem);
+    } else {
+        // 部屋リストを表示
+        roomsData.forEach(room => {
+            const li = document.createElement('li');
+            li.className = 'room-item';
+            
+            const roomInfo = document.createElement('div');
+            roomInfo.className = 'room-info';
+            
+            const roomName = document.createElement('span');
+            roomName.className = 'room-name';
+            roomName.textContent = room.name;
+            
+            const roomId = document.createElement('span');
+            roomId.className = 'room-id';
+            roomId.textContent = `ID: ${room.id}`;
+            
+            const playerCount = document.createElement('span');
+            playerCount.className = 'player-count';
+            playerCount.textContent = `プレイヤー: ${room.players.length}`;
+            
+            const hostName = document.createElement('span');
+            hostName.className = 'host-name';
+            hostName.textContent = `ホスト: ${room.hostName}`;
+            
+            const status = document.createElement('span');
+            status.className = room.isPlaying ? 'status playing' : 'status waiting';
+            status.textContent = room.isPlaying ? 'ゲーム中' : '待機中';
+            
+            roomInfo.appendChild(roomName);
+            roomInfo.appendChild(roomId);
+            roomInfo.appendChild(playerCount);
+            roomInfo.appendChild(hostName);
+            roomInfo.appendChild(status);
+            
+            const joinBtn = document.createElement('button');
+            joinBtn.className = 'button join-room-btn';
+            joinBtn.textContent = '入室';
+            joinBtn.addEventListener('click', () => {
+                const nicknamePrompt = prompt('参加するニックネームを入力してください:');
+                if (nicknamePrompt === null) return;
+                myNickname = nicknamePrompt.trim();
+                if (!myNickname) {
+                    alert('ニックネームは必須です。');
+                    return;
+                }
+                socket.emit('joinRoom', { roomId: room.id, nickname: myNickname });
+            });
+            
+            li.appendChild(roomInfo);
+            li.appendChild(joinBtn);
+            roomListUl.appendChild(li);
+        });
+    }
 });
 
 // 部屋作成成功時
